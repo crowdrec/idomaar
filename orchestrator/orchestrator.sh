@@ -1,3 +1,4 @@
+
 #!/bin/sh
 # $1 = ALGO directory, relative to base algo dir
 # $2 = COMPUTE env directory, relative to base compute envs dir
@@ -28,8 +29,8 @@ if [ -f .pid ]; then
 	kill -9 `cat .pid`
 fi
 mkdir -p $MESSAGING_DIR
-mkdir -o $MESSAGING_DIR/msg
-mkdir -o $MESSAGING_DIR/data
+mkdir -p $MESSAGING_DIR/msg
+mkdir -p $MESSAGING_DIR/data
 
 
 echo "DO: Update git REPOs"
