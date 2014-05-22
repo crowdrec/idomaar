@@ -4,20 +4,24 @@
 # $2 = COMPUTE env directory, relative to base compute envs dir
 # $3 = DATA directory, relative to base data dir
 
-# EG orchestrator.sh 01.java/01.mahout/01.example/ 01.linux/01.centos/01.mahout/ 01.MovieTweetings/datasets/snapshots_10K/
+# Startup with e.g. orchestrator.sh 01.java/01.mahout/01.example/ 01.linux/01.centos/01.mahout/ 01.MovieTweetings/datasets/snapshots_10K/
 
 BASEDIR=/home/davide/sources/crowdrec/reference-framework
-STAGEDIR=$1
-BASEMSG_IN=cmd_in.msg
-INF=$BASEDIR/$BASEMSG_IN
-OUTF=$BASEDIR/cmd_out.msg
 
 ALGO_DIR=$BASEDIR/../algorithms
 DATA_DIR=$BASEDIR/../datasets
 COMPUTING_ENV_DIR=$BASEDIR/../computingenvironments
-MESSAGING_DIR=$BASEDIR/.messaging
+ORCHESTRATOR_DIR=$BASEDIR/orchestrator
 
-SDIR=./resources/
+
+## MESSAGE
+MESSAGING_DIR=/tmp/messaging
+OUTF=$MESSAGING_DIR/cmd_out.msg
+BASEMSG_IN=cmd_in.msg
+INF=$MESSAGING_DIR/$BASEMSG_IN
+
+## ORCHESTRATOR
+SDIR=$ORCHESTRATOR_DIR/resources/
 
 FNAME=$BASEDIR/output_filename.1
 
@@ -29,9 +33,6 @@ if [ -f .pid ]; then
 	kill -9 `cat .pid`
 fi
 mkdir -p $MESSAGING_DIR
-mkdir -p $MESSAGING_DIR/msg
-mkdir -p $MESSAGING_DIR/data
-
 
 echo "DO: Update git REPOs"
 cd $ALGO_DIR
@@ -45,10 +46,9 @@ git pull
 
 # TODO: creating train/test sets
 
-# TODO: separate libraries from core algorithm
 echo "DO: starting machine"
 cd $COMPUTING_ENV_DIR/$2
-SHARED_ALGO=$ALGO_DIR/$1 SHARED_DATA=$DATA_DIR/$3 SHARED_MSG=$MESSAGGING_DIR vagrant up 
+SHARED_ALGO=$ALGO_DIR/$1 SHARED_DATA=$DATA_DIR/$3 SHARED_MSG=$MESSAGING_DIR vagrant up 
 
 echo "STATUS: waiting for machine to be ready"
 while [ ! -f $OUTF ] ; 
@@ -64,7 +64,9 @@ fi
 rm -f $OUTF
 
 echo "DO: read input"
-cp $SDIR/$BASEMSG_IN.read $INF
+
+echo -e "READ_INPUT\nentities=/mnt/data/entities.dat\nrelations=/mnt/data/relations.dat" > $INF
+
 while [ ! -f $OUTF ] ; 
 do
 	sleep 2
@@ -79,6 +81,7 @@ rm -f $OUTF
 
 echo "DO: train"  
 cp $SDIR/$BASEMSG_IN.train $INF
+
 while [ ! -f $OUTF ] ; 
 do 
         sleep 2
@@ -107,11 +110,6 @@ rm -f $OUTF
 
 echo "DO: stop"
 cp $SDIR/$BASEMSG_IN.stop $INF
-
-echo ""
-echo ""
-echo "== recommendations == "
-cat $FNAME
 
 # TODO: test/evaluate the output
 sleep 5
