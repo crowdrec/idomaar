@@ -120,8 +120,14 @@ rm -f $OUTF
 echo "DO: stop"
 printf "STOP" > $INF
 
+
 # TODO: test/evaluate the output
 sleep 5
 #kill -9 $pid
 #rm -f .pid
+
+echo "DO: Stopping computing environment"
+cd $COMPUTING_ENV_DIR/$2
+vagrant halt
+
 echo "INFO: finished"
