@@ -6,13 +6,17 @@
 
 # Startup with e.g. orchestrator.sh 01.java/01.mahout/01.example/ 01.linux/01.centos/01.mahout/ 01.MovieTweetings/datasets/snapshots_10K/
 
-BASEDIR=/home/davide/sources/crowdrec/reference-framework
-
+BASEDIR=$PWD/..
 ALGO_DIR=$BASEDIR/../algorithms
 DATA_DIR=$BASEDIR/../datasets
 COMPUTING_ENV_DIR=$BASEDIR/../computingenvironments
 ORCHESTRATOR_DIR=$BASEDIR/orchestrator
 
+echo reference framework base path: $BASEDIR
+echo algorithm base path: $ALGO_DIR
+echo dataset path: $DATA_DIR
+echo computing environment path: $COMPUTING_ENV_DIR
+echo orchestrator path: $ORCHESTRATOR_DIR
 
 ## MESSAGE
 MESSAGING_DIR=/tmp/messaging
@@ -79,8 +83,8 @@ else
 fi
 rm -f $OUTF
 
-echo "DO: train"  
-cp $SDIR/$BASEMSG_IN.train $INF
+echo "DO: train"
+echo -e "TRAIN" > $INF 
 
 while [ ! -f $OUTF ] ; 
 do 
@@ -95,7 +99,8 @@ fi
 rm -f $OUTF
 
 echo "DO: recommend"
-cp $SDIR/$BASEMSG_IN.recommend $INF
+echo -e "RECOMMEND\noutput_recommendations.1\n7\n10\n11\n15\n16\n22\n27\n28" > $INF
+
 while [ ! -f $OUTF ] ; 
 do 
         sleep 2
@@ -109,7 +114,7 @@ fi
 rm -f $OUTF
 
 echo "DO: stop"
-cp $SDIR/$BASEMSG_IN.stop $INF
+echo -e "STOP" > $INF
 
 # TODO: test/evaluate the output
 sleep 5
