@@ -1,9 +1,5 @@
 * Tested with Python 2.8
-* Install 
-
-** (pip) pyzmq
-
-** (pip) enum34
+* Install (pip) pyzmq and enum34
 
 * (Install ruby if required)
 
