@@ -1,4 +1,9 @@
-* Install ruby
+* Tested with Python 2.8
+* Install 
+** (pip) pyzmq
+** (pip) enum34
+
+* (Install ruby if required)
 
 * Install vagrant
 e.g., on debian-based env: sudo apt-get install vagrant
@@ -8,7 +13,8 @@ e.g., on debian-based env: sudo apt-get install vagrant
 * Install virtual box 
 
 * run orchestrator
-e.g., sh orchestrator.sh 01.java/01.mahout/01.example/ 01.linux/01.centos/01.mahout/ 01.MovieTweetings/datasets/snapshots_10K/   
+e.g., python2.7 orchestrator.py 01.java/01.mahout/01.example/ 01.linux/01.centos/01.mahout/ 01.MovieTweetings/datasets/snapshots_10K/   
+
 The orchestrator:   
 **    updates git repositories   
 **    runs the specified computing environment (using Vagrant), in this case linux-centos   
