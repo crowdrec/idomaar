@@ -2,6 +2,7 @@
 * Install 
 
 ** (pip) pyzmq
+
 ** (pip) enum34
 
 * (Install ruby if required)
