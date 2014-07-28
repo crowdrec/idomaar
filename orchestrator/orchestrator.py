@@ -74,7 +74,10 @@ class Orchestrator(object):
 
         print ("STATUS: waiting for machine to be ready")
         while True:
+            print ("reading message")
             message = self._socket.recv()
+            print ("read message: %s " % message)
+
             if message == 'READY':
                 print ("INFO: machine started")
                 print ("DO: read input")
@@ -99,15 +102,14 @@ class Orchestrator(object):
                     print ("INFO: recommender correctly trained")
                     print ("DO: recommend")
 
-                    msg = ['RECOMMEND', '7', '10', '11', '15', '16', '22',
-                           '27', '28']
+                    msg = ['RECOMMEND', '5', 'user:7', 'user:10', 'user:11', 'user:15', 'user:16', 'user:22', 'user:27', 'user:28'] # RECOMMEND RECLEN ENTITY1 ENTITY2...
                     self._socket.send_multipart(msg)
                     self._state = OrchestratorState.recommending
 
                 elif self._state == OrchestratorState.recommending:
                     print ("INFO: recommendations correctly generated")
                     recoms = self._socket.recv_multipart()
-                    print recoms
+                    print (recoms)
 
                     break
 
@@ -140,7 +142,7 @@ class Orchestrator(object):
 if __name__ == '__main__':
     import sys
 
-    basedir = os.path.abspath("../")
+    basedir = os.path.abspath("../../")
     algodir = os.path.join(basedir, "algorithms")
     datadir = os.path.join(basedir, "datasets")
     computing_env_dir = os.path.join(basedir, "computingenvironments")
