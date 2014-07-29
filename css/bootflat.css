@@ -1235,7 +1235,7 @@ fieldset[disabled] .radio,
 .navbar-default .navbar-link:focus,
 .navbar-default .navbar-brand:hover,
 .navbar-default .navbar-brand:focus {
-    color: #d3efff;
+    color: #000;
 }
 .navbar-default .navbar-link,
 .navbar-default .navbar-text {

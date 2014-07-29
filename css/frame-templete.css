@@ -91,36 +91,52 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 
 /* Top nav and header
 -------------------------------------------------- */
+#header
+{
+	background-color: #fff !important;
+}
+
 .bf-docs-nav {
   border-bottom: 1px solid #454545 !important;  
 }
 .bf-docs-nav .navbar-brand {
   padding-left: 80px;
-  color: #fff;
+  color: #000;
   background: url(../img/nav-logo.png) no-repeat 15px 3px;
 }
+
+.bf-docs-nav .navbar-brand:hover {
+	color: #000;
+}
+
+#btnIndex.navbar-brand
+{
+	height: 35px;
+}
+
+
 .bf-docs-nav .navbar-nav > li > a {
   margin: 5px 5px 0;
   padding: 10px;
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
   border-radius: 4px;
-  color: #fff;
+  color: #000;
 }
 .bf-docs-nav .navbar-nav > li > a:hover {
-  color: #fff;
-  background-color: #2ba3d4;
+  color: #000;
+  background-color: rgb(231,93,20);
 }
 .bf-docs-nav .navbar-nav > .active > a,
 .bf-docs-nav .navbar-nav > .active > a:hover {
-  color: #fff;
+  color: #000;
   background-color: #2ba3d4 !important;
 }
 
 /* Homepage */
 .bf-docs-home {
   color: #fff;
-  background-color: #000;
+  background-color: rgba(92,151,35,100);
 }
 
 /* Homepage masthead
@@ -138,7 +154,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 }
 .bf-masthead .bf-masthead-bg {
   padding: 30px 15px;
-  background-color: rgba(61, 131, 34, 0.85)
+  background-color: rgba(92, 151, 35, 0.90)
 }
 .bf-masthead .logo {
   background: url(../img/logo.png) no-repeat 50% 0;
@@ -175,7 +191,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 }
 .bf-masthead .btn-outline:hover {
   background-color: #fff;
-  color: #42a8d2;
+  color: rgb(231,93,20);
 }
 
 .bf-masthead-links {
@@ -216,12 +232,12 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   -webkit-border-radius: 50%;
   -moz-border-radius: 50%;
   border-radius: 50%;
-  background-color: #e5e9ed;
+  background-color: #F5DEBB;
   width: 80px;
   height: 80px;
   line-height: 80px;
   font-size: 40px;
-  color: #a5b6c7;
+  color: rgb(231,93,20);
 }
 .bf-features h3 {
   margin: 0 0 10px;
@@ -235,7 +251,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   font-size: 16px;
   color: #fff;
   text-align: center;
-  background-color: #3dc0f1;
+  background-color: rgba(231,93,20,100);
 }
 .bf-github h2 {
   margin-bottom: 20px;
@@ -255,7 +271,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   height: 80px;
   line-height: 80px;
   font-size: 40px;
-  color: #3dc0f1;
+  color: rgba(231,93,20,100);
 }
 .bf-github h3 ~ p {
   font-size: 14px;
@@ -524,7 +540,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 
 .bf-footer {
   padding: 120px 0;
-  background-color: #000;
+  background-color: rgba(92,151,35,100);
 }
 .bf-footer.bf-footer-margin {
   margin-top: 100px;
@@ -534,7 +550,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   color: #ddd;
 }
 .bf-footer a {
-  color: #8f8d8d;
+  color: rgb(226,149,109);
 }
 .bf-footer a:hover {
   color:#fff;
