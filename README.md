@@ -1,7 +1,7 @@
 reference-framework
 ===================
 
-CrowdRec reference framework
+CrowdRec reference framework (http://rf.crowdrec.eu)
 
 At the highest abstraction level, the reference framework can be split into the following blocks:
 * the algorithms to test, both state-of-the-art algorithms and new solutions implemented within the CrowdRec project, e.g,. the algorithms developed in WP4.
