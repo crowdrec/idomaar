@@ -35,6 +35,14 @@ class Orchestrator(object):
     def computing_env(self):
         return self._computing_env
 
+    @property
+    def evaluator(self):
+        return self._evaluator
+
+    @evaluator.setter
+    def evaluator(self, value):
+        self._evaluator = value
+
     @computing_env.setter
     def computing_env(self, value):
         self._computing_env = value
@@ -68,6 +76,10 @@ class Orchestrator(object):
         return ret
 
     def run(self):
+    	cmd = ['sh', self.evaluator + 'userbasedeval.sh']
+	print cmd
+	subprocess.call(cmd, cwd=self.evaluator)
+
         if self.dataset is None:
             print("recommendation dataset is not set!")
             return
@@ -101,7 +113,7 @@ class Orchestrator(object):
                 elif self._state == OrchestratorState.training:
                     print ("INFO: recommender correctly trained")
                     print ("DO: recommend")
-
+                    # read from test file to recommend to each user in test file
                     msg = ['RECOMMEND', '5', 'user:7', 'user:10', 'user:11', 'user:15', 'user:16', 'user:22', 'user:27', 'user:28'] # RECOMMEND RECLEN ENTITY1 ENTITY2...
                     self._socket.send_multipart(msg)
                     self._state = OrchestratorState.recommending
@@ -109,6 +121,7 @@ class Orchestrator(object):
                 elif self._state == OrchestratorState.recommending:
                     print ("INFO: recommendations correctly generated")
                     recoms = self._socket.recv_multipart()
+                    # recommendations written to prediction file
                     print (recoms)
 
                     break
@@ -145,6 +158,7 @@ if __name__ == '__main__':
     basedir = os.path.abspath("../../")
     algodir = os.path.join(basedir, "algorithms")
     datadir = os.path.join(basedir, "datasets")
+    evaluatordir = os.path.join(basedir,'evaluators')
     computing_env_dir = os.path.join(basedir, "computingenvironments")
 
     print ("reference framework base path: %s" % basedir)
@@ -156,6 +170,7 @@ if __name__ == '__main__':
     orchestrator.algorithm = os.path.join(algodir, sys.argv[1])
     orchestrator.dataset = os.path.join(datadir, sys.argv[3])
     orchestrator.computing_env = os.path.join(computing_env_dir, sys.argv[2])
+    orchestrator.evaluator = os.path.join(evaluatordir, sys.argv[4])
 
     status = orchestrator.start_vm()
     if status != 0:
