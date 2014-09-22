@@ -1,7 +1,7 @@
 Idomaar
 ===================
 
-**Idomaar** (/i:dɒma:/) is the [CrowdRec](http://www.crowdrec.eu) recommendation and evaluation reference framework.
+**Idomaar** (/i:dɒmæ(r)/) is the [CrowdRec](http://www.crowdrec.eu) recommendation and evaluation reference framework.
 
 At the highest abstraction level, Idomaar can be split into the following blocks:
 * the algorithms to test, both state-of-the-art algorithms and new solutions implemented within the [CrowdRec](http://www.crowdrec.eu) project, e.g,. the algorithms developed in WP4.
