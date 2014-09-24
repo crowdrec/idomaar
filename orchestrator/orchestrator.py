@@ -142,9 +142,9 @@ class Orchestrator(object):
 if __name__ == '__main__':
     import sys
 
-    basedir = os.path.abspath("../../")
+    basedir = os.path.abspath("../")
     algodir = os.path.join(basedir, "algorithms")
-    datadir = os.path.join(basedir, "datasets")
+    datadir = os.path.join(basedir, "../datasets")
     computing_env_dir = os.path.join(basedir, "computingenvironments")
 
     print ("reference framework base path: %s" % basedir)
