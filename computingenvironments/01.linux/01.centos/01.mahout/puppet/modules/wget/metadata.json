@@ -1,0 +1,33 @@
+{
+  "name": "maestrodev-wget",
+  "version": "1.4.1",
+  "source": "http://github.com/maestrodev/puppet-wget.git",
+  "author": "maestrodev",
+  "license": "Apache License, Version 2.0",
+  "summary": "Download files with wget",
+  "description": "A module for wget that allows downloading of files, supporting authentication",
+  "project_page": "http://github.com/maestrodev/puppet-wget",
+  "dependencies": [
+
+  ],
+  "types": [
+
+  ],
+  "checksums": {
+    "Gemfile": "b7535c2f94bb78b8f3b21eee7ae79860",
+    "Gemfile.lock": "2bbfbceaa08eb04f5c1438bb57e98e95",
+    "LICENSE": "3b83ef96387f14655fc854ddc3c6bd57",
+    "Modulefile": "fb21426a4c4d906e023e66d158f94300",
+    "README.md": "02e0925eddf0ead8d3c0e0865167e3b5",
+    "Rakefile": "48e05f3709c484d430eacc5dcb237547",
+    "manifests/authfetch.pp": "4e02d11bba3d72b1ea09b854fa272f27",
+    "manifests/fetch.pp": "7df6b780b01324d626fabacb6ffd2b48",
+    "manifests/init.pp": "582c44cad08f204e424fc361327842b7",
+    "spec/classes/init_spec.rb": "154db01e3fff4f58689fc8729ec1a721",
+    "spec/defines/authfetch_spec.rb": "aa48b93f4e8da3aab2cd4d39bbea8699",
+    "spec/defines/fetch_spec.rb": "221a428a6e5ce13bd2804d9472293a12",
+    "spec/spec_helper.rb": "0db89c9a486df193c0e40095422e19dc",
+    "spec/spec_helper_system.rb": "deaf51d85121ccd2edd4db144941b2ce",
+    "spec/system/wget_system_spec.rb": "13f5696b3b9a9ba89a1c6f0da60e171b"
+  }
+}

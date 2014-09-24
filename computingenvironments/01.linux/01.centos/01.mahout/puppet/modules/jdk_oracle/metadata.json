@@ -1,0 +1,25 @@
+{
+  "name": "tylerwalts-jdk_oracle",
+  "version": "1.2.1",
+  "author": "tylerwalts",
+  "summary": "Module for automating Oracle JDK download and installation",
+  "types": [
+
+  ],
+  "description": "Module for automating Oracle JDK download and installation, which does not have a dependency on a human download task, file share or centralized architecture design.  It fetches the installer binary from the target server, for the target server.  This approach assumes that automation is more valuable than bandwidth.",
+  "project_page": "https://github.com/tylerwalts/puppet-jdk_oracle",
+  "dependencies": [
+
+  ],
+  "checksums": {
+    "Rakefile": "4617b1db6b164cda36fa92014ffa4950",
+    "LICENSE": "04710a89087f7051fd6f26539353f14d",
+    "README.md": "50186f3c45ce80022a8befb36b06bc19",
+    "manifests/init.pp": "3536db3f9ba0f14c75a4e3722f13cf98",
+    "spec/classes/jdk_oracle_init_spec.rb": "740475a59899c1fa24164ecf25132f3f",
+    "Modulefile": "ae34fddcf415c7d3eba2666c11d6ee17",
+    "spec/spec_helper.rb": "3ea886dd135e120afa31e0aab12e85b0"
+  },
+  "source": "https://github.com/tylerwalts/puppet-jdk_oracle",
+  "license": "Apache License, Version 2.0"
+}

@@ -1,0 +1,29 @@
+{
+  "name": "jproyo-git",
+  "version": "0.1.0",
+  "source": "https://github.com/mxhero/puppet-modules/tree/master/modules/git",
+  "author": "Juan Pablo Royo",
+  "license": "Apache 2.0",
+  "summary": "Git client module to clone repos",
+  "description": "Install Git client and Clone repos",
+  "project_page": "https://github.com/mxhero/puppet-modules/tree/master/modules/git",
+  "dependencies": [
+
+  ],
+  "types": [
+
+  ],
+  "checksums": {
+    "CONTRIBUTING.markdown": "3e5ae524028650b0c48c697f94ab2871",
+    "Modulefile": "46532b1acd683314ab5cd97f5e8ccf2d",
+    "README.markdown": "8fb7aa626fe61877f701cd5aa183411a",
+    "gpl.txt": "97ff9683aa36f333c7d2295d6520090f",
+    "manifests/init.pp": "c78c46f4491d2ef6965542ab9771a509",
+    "manifests/install.pp": "edf129075c796f09f68f754bfd9b6227",
+    "manifests/params.pp": "a2b05be70cc4754d645735b626f8e8b1",
+    "manifests/repo.pp": "3afe9ed97edf9721bea6fa7427ed74ae",
+    "spec/spec.opts": "a600ded995d948e393fbe2320ba8e51c",
+    "spec/spec_helper.rb": "ca19ec4f451ebc7fdb035b52eae6e909",
+    "tests/init.pp": "bcee788a7d204e07e265aeafce4dc88f"
+  }
+}

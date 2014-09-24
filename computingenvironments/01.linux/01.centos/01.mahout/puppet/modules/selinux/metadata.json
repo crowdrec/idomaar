@@ -1,0 +1,42 @@
+{
+  "name": "spiette-selinux",
+  "version": "0.5.4",
+  "source": "http://github.com/spiette/puppet-selinux",
+  "author": "spiette",
+  "license": "Apache License, Version 2.0",
+  "summary": "This class manages SELinux on RHEL based systems.",
+  "description": "This class manages SELinux on RHEL based systems.",
+  "project_page": "http://github.com/spiette/puppet-selinux",
+  "dependencies": [
+
+  ],
+  "types": [
+
+  ],
+  "checksums": {
+    "Gemfile": "7f1a8c9be7f31126e881faac3ac288dc",
+    "LICENSE": "2a944942e1496af1886903d274dedb13",
+    "Modulefile": "ea089990570858656f8ea29124f79613",
+    "README.markdown": "2e9ddabf58782febc8eb5cfc5fe91955",
+    "Rakefile": "5859e69c178ff9abf831afa44471c874",
+    "files/rsynclocal/rsynclocal.te": "3def84b0012434040742c96e00e63b66",
+    "manifests/config.pp": "72cfe066807c865b10f5cc0ee9015ea1",
+    "manifests/init.pp": "3ecafff08cc454927f6cd7f7c336f6b8",
+    "manifests/install.pp": "c5a38f77615068c6ac9df183aaef15b4",
+    "manifests/module.pp": "22fb4415784ef3585556a496dc6b3617",
+    "manifests/params.pp": "cad105b13fba32b4f1d519851e9419c8",
+    "selinux.vim": "8484b34264b98ba101f7c61c8629997c",
+    "spec/classes/selinux_spec.rb": "c7cd3383455bdf2f2595a9c0911d8e68",
+    "spec/defines/selinux_module_spec.rb": "68db1f7cc7b7ffc2d10244adb0a69125",
+    "spec/spec_helper.rb": "0db89c9a486df193c0e40095422e19dc",
+    "templates/sysconfig_selinux.erb": "0773ca4639a514ddd7d8765507337f80",
+    "tests/disable.pp": "080cc9f999cd49e633f7a94ea4060eb2",
+    "tests/enforcing.pp": "0807c45e8aa2ba79c28b9681271a8d1b",
+    "tests/module-absent.pp": "6b6369666447cc9fc122b07e0d71ffe0",
+    "tests/module-disabled.pp": "7516902688b81e7323bcb27ffd0ac9f4",
+    "tests/module-enabled.pp": "93ce61b8bb51c0e7b3f5e623ec44e15e",
+    "tests/module-nothing.pp": "f866647779f54940f89cf4e6cf908347",
+    "tests/module.pp": "54a993d7087d127126dcc3563210d40c",
+    "tests/permissive.pp": "b9231c7058d179b533a6800aeea82b48"
+  }
+}

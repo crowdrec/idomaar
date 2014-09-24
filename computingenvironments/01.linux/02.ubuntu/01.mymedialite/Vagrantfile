@@ -1,0 +1,61 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+
+BOX_NAME   		= ENV['BOX_NAME']   		|| 'ubuntu12.04'
+BOX_URI    		= ENV['BOX_URI']    		|| 'https://cloud-images.ubuntu.com/vagrant/precise/current/precise-server-cloudimg-i386-vagrant-disk1.box'
+
+DOMAIN     		= 'moviri.com' 				#specify DOMAIN without initial dot. e.g. "moviri.com"
+
+
+nodes = [
+  { "node_id" => 1, "hostname" => 'mymedialite',   "ip" => '192.168.0.42', "box" => BOX_NAME, "boxurl" => BOX_URI, "ram" => 512, "role" => 'fe'}
+]
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = '2'
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+	nodes.each do |node|
+		
+		config.vm.define node["hostname"] do |node_config|
+	    	node_config.vm.box = node["box"]
+	    	node_config.vm.box_url = node["boxurl"]
+	      	#node_config.vm.network 'private_network', type: 'dhcp'
+	      	#node_config.vm.network 'private_network', ip: node["ip"]
+	      	node_config.vm.hostname = node["hostname"]
+	      				
+    		node_config.vm.provider 'virtualbox' do |v, override|
+				memory = node["ram"] ? node["ram"] : 256;
+				v.customize ['modifyvm', :id,
+				             '--cpuexecutioncap', '50',
+				             '--name', node["hostname"],
+				             '--memory', memory.to_s
+				             ]
+			end
+
+			if ENV['SHARED_ALGO']
+				config.vm.synced_folder ENV['SHARED_ALGO'], "/mnt/algo" 
+			end
+			if ENV['SHARED_DATA']
+				config.vm.synced_folder ENV['SHARED_DATA'], "/mnt/data"
+			end 
+			if ENV['SHARED_MSG']
+				config.vm.synced_folder ENV['SHARED_MSG'],  "/mnt/messaging"
+			end 
+			
+						
+      		# Provisioning puppet on boxes
+		    node_config.vm.provision 'shell', inline: 'apt-get install puppet'
+      		        
+      		node_config.vm.provision 'puppet' do |puppet|  
+				puppet.manifests_path 	= 'puppet/manifests'
+				puppet.manifest_file	= 'site.pp'          
+				puppet.module_path 		= 'puppet/modules'     
+			end                                           
+      		
+   		end
+  	end
+  	  	
+end
