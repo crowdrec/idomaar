@@ -56,8 +56,8 @@ class Orchestrator(object):
 
         cmd = ['vagrant', 'up']
         env_vars = os.environ
-        env_vars['SHARED_ALGO'] = self.algorithm
-        env_vars['SHARED_DATA'] = self.dataset
+        env_vars['SHARED_ALGO'] = orchestrator.algorithm
+        env_vars['SHARED_DATA'] = orchestrator.dataset
         ret = subprocess.call(cmd, env=env_vars, cwd=self.computing_env)
         return ret
 
@@ -147,15 +147,17 @@ if __name__ == '__main__':
     datadir = os.path.join(basedir, "../datasets")
     computing_env_dir = os.path.join(basedir, "computingenvironments")
 
-    print ("reference framework base path: %s" % basedir)
-    print ("algorithm base path: %s" % algodir)
-    print ("dataset path: %s" % datadir)
-    print ("computing environment path: %s" % computing_env_dir)
 
     orchestrator = Orchestrator()
     orchestrator.algorithm = os.path.join(algodir, sys.argv[1])
     orchestrator.dataset = os.path.join(datadir, sys.argv[3])
     orchestrator.computing_env = os.path.join(computing_env_dir, sys.argv[2])
+
+    print ("reference framework base path: %s" % basedir)
+    print ("algorithm path: %s" % orchestrator.algorithm)
+    print ("dataset path: %s" % orchestrator.dataset)
+    print ("computing environment path: %s" % computing_env_dir)
+
 
     status = orchestrator.start_vm()
     if status != 0:
