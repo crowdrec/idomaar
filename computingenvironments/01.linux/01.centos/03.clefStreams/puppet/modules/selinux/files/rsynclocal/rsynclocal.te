@@ -1,0 +1,13 @@
+
+module rsynclocal 0.5.9;
+
+require {
+	type default_t;
+	type rsync_t;
+	class file { create getattr read rename setattr unlink write };
+	class dir { add_name getattr read remove_name search write };
+}
+
+#============= rsync_t ==============
+allow rsync_t default_t:file { create getattr read rename setattr unlink write };
+allow rsync_t default_t:dir { add_name getattr read remove_name search write };

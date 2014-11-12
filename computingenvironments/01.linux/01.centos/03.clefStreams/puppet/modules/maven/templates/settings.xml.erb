@@ -1,0 +1,146 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+<%- unless @local_repo.empty? -%>
+  <localRepository><%= @local_repo %></localRepository>
+
+<%- end -%>
+<% unless @mirrors.empty? -%>
+  <mirrors>
+<% @mirrors.each do |mirror| -%>
+    <mirror>
+      <id><%= mirror['id'] %></id>
+      <url><%= mirror['url'] %></url>
+      <mirrorOf><%= mirror['mirrorof'] %></mirrorOf>
+    </mirror>
+<% end -%>
+  </mirrors>
+
+<% end -%>
+<% unless @servers.empty? -%>
+  <servers>
+<% @servers.each do |server| -%>
+    <server>
+      <id><%= server['id'] %></id>
+      <username><%= server['username'] %></username>
+      <password><%= server['password'] %></password>
+    </server>
+<% end -%>
+  </servers>
+
+<% end -%>
+<% unless @proxies.empty? -%>
+  <proxies>
+<% @proxies.each do |proxy| -%>
+    <proxy>
+<% if(proxy['active'].nil?) -%>
+      <active>true</active>
+<% else -%>
+      <active><%= proxy['active'] %></active>
+<% end -%>
+<% if(proxy['protocol'].nil?) -%>
+      <protocol>http</protocol>
+<% else -%>
+      <protocol><%= proxy['protocol'] %></protocol>
+<% end -%>
+      <host><%= proxy['host'] %></host>
+<% unless(proxy['port'].nil?) -%>
+      <port><%= proxy['port'] %></port>
+<% end -%>
+<% unless(proxy['username'].nil?) -%>
+      <username><%= proxy['username'] %></username>
+<% end -%>
+<% unless(proxy['password'].nil?) -%>
+      <password><%= proxy['password'] %></password>
+<% end -%>
+<% unless(proxy['nonProxyHosts'].nil?) -%>
+      <nonProxyHosts><%= proxy['nonProxyHosts'] %></nonProxyHosts>
+<% end -%>
+    </proxy>
+<% end -%>
+  </proxies>
+
+<% end -%>
+<% 
+  unless @default_repo_config.nil? or @default_repo_config.empty?
+    @default_repo_config['id'] = 'central'
+    @repos << @default_repo_config
+  end
+-%>
+<% unless @repos.empty? and @properties.empty? -%>
+  <profiles>
+    <%- unless @repos.empty? -%>
+    <profile>
+      <id>default-repo</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+<% @repos.each do |repo| -%>
+        <repository>
+          <id><%= repo['id'] %></id>
+<% unless repo['name'].nil? -%>
+          <name><%= repo['name'] %></name>
+<% end -%>
+          <url><%= repo['url'] %></url>
+          <%- unless repo['snapshots'].nil? or repo['snapshots'].empty? -%>
+          <snapshots>
+            <%- repo['snapshots'].sort.each { |key,value| -%>
+            <%=  "<#{key}>#{value}</#{key}>" %>
+            <%- } -%>
+          </snapshots>
+          <%- end -%>
+          <%- unless repo['releases'].nil? or repo['releases'].empty? -%>
+          <releases>
+            <%- repo['releases'].sort.each { |key,value| -%>
+            <%=  "<#{key}>#{value}</#{key}>" %>
+            <%- } -%>
+          </releases>
+          <%- end -%>
+        </repository>
+<% end -%>
+      </repositories>
+      <pluginRepositories>
+<% @repos.each do |repo| -%>
+        <pluginRepository>
+          <id><%= repo['id'] %></id>
+<% unless repo['name'].nil? -%>
+          <name><%= repo['name'] %></name>
+<% end -%>
+          <url><%= repo['url'] %></url>
+          <%- unless repo['snapshots'].nil? or repo['snapshots'].empty? -%>
+          <snapshots>
+            <%- repo['snapshots'].sort.each { |key,value| -%>
+            <%=  "<#{key}>#{value}</#{key}>" %>
+            <%- } -%>
+          </snapshots>
+          <%- end -%>
+          <%- unless repo['releases'].nil? or repo['releases'].empty? -%>
+          <releases>
+            <%- repo['releases'].sort.each { |key,value| -%>
+            <%=  "<#{key}>#{value}</#{key}>" %>
+            <%- } -%>
+          </releases>
+          <%- end -%>
+        </pluginRepository>
+<% end -%>
+      </pluginRepositories>
+    </profile>
+    <%- end -%>
+    <%- unless @properties.empty? -%>
+    <profile>
+      <id>properties</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <%- @properties.sort.each { |key, value| -%>
+        <%=  "<#{key}>#{value}</#{key}>" %>
+        <%- } -%>
+      </properties>
+    </profile>
+    <%- end -%>
+  </profiles>
+
+<% end -%>
+</settings>
