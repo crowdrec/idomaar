@@ -47,6 +47,16 @@ class Orchestrator(object):
     def algorithm(self, value):
         self._algorithm = value
 
+    def start_datastream(self):
+
+        print ("DO: starting data stream")
+
+        cmd = ['vagrant', 'up']
+        env_vars = os.environ
+
+        ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager)
+        return ret
+
     def start_vm(self):
         if self.computing_env is None:
             print ("computing env not set!")
@@ -57,7 +67,7 @@ class Orchestrator(object):
         cmd = ['vagrant', 'up']
         env_vars = os.environ
         env_vars['SHARED_ALGO'] = orchestrator.algorithm
-        env_vars['SHARED_DATA'] = orchestrator.dataset
+
         ret = subprocess.call(cmd, env=env_vars, cwd=self.computing_env)
         return ret
 
@@ -144,19 +154,24 @@ if __name__ == '__main__':
 
     basedir = os.path.abspath("../")
     algodir = os.path.join(basedir, "algorithms")
-    datadir = os.path.join(basedir, "../datasets")
     computing_env_dir = os.path.join(basedir, "computingenvironments")
 
 
     orchestrator = Orchestrator()
     orchestrator.algorithm = os.path.join(algodir, sys.argv[1])
-    orchestrator.dataset = os.path.join(datadir, sys.argv[3])
+    orchestrator.dataset = sys.argv[3]
     orchestrator.computing_env = os.path.join(computing_env_dir, sys.argv[2])
+    orchestrator.datastreammanager = os.path.join(basedir, "datastreammanager")
 
-    print ("reference framework base path: %s" % basedir)
-    print ("algorithm path: %s" % orchestrator.algorithm)
-    print ("dataset path: %s" % orchestrator.dataset)
-    print ("computing environment path: %s" % computing_env_dir)
+    print ("Idomaar base path: %s" % basedir)
+    print ("Algorithm path: %s" % orchestrator.algorithm)
+    print ("Dataset URI: %s" % orchestrator.dataset)
+    print ("Computing environment path: %s" % computing_env_dir)
+
+    status = orchestrator.start_datastream()
+    if status != 0:
+        print ("error starting data stream manager")
+        sys.exit(1)
 
 
     status = orchestrator.start_vm()

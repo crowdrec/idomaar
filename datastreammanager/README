@@ -1,0 +1,26 @@
+Start VM with vagrant up
+
+The VM will be configured to run:
+- zookeeper
+- kafka
+
+In order to test idomaar flume task "vagrant ssh" and:
+
+# GITHUB -> KAFKA (NO STREAMING)
+flume-ng 	agent --name a1 --conf-file /vagrant/config/idomaar-TO-kafka.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/entities.dat -Didomaar.sourceType=file
+
+# GITHUB -> KAFKA (STREAMING)
+flume-ng agent --name a1 --conf-file /vagrant/config/idomaar-TO-kafka.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/relations.dat -Didomaar.sourceType=stream
+
+# GITHUB -> S3
+# CHANGE a1.sinks.s3hdfs.hdfs.path value for your S3 BUCKET in configuration file
+flume-ng agent --name a1 --conf-file /vagrant/config/idomaar-TO-S3.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/entities.dat -Didomaar.sourceType=file
+
+
+# KAFKA -> S3
+# CHANGE a1.sinks.s3hdfs.hdfs.path value for your S3 BUCKET in configuration file
+flume-ng agent --name a1 --conf-file /vagrant/config/kafka-TO-S3.conf
+
+# KAFKA -> LOCAL FILE SYSTEM
+# CHANGE a1.sinks.s3hdfs.hdfs.path value for your S3 BUCKET in configuration file
+flume-ng agent --name a1 --conf-file /vagrant/config/kafka-TO-fs.conf

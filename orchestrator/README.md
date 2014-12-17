@@ -13,6 +13,11 @@ e.g., on debian-based env: sudo apt-get install vagrant
 * run orchestrator
 e.g., python2.7 orchestrator.py 01.java/01.mahout/01.example/ 01.linux/01.centos/01.mahout/ 01.MovieTweetings/datasets/snapshots_10K/   
 
+orchestrator.py computing_env algorithm dataset_base_uri
+
+e.g. python2.7 orchestrator.py 01.java/01.mahout/01.example/ 01.linux/01.centos/01.mahout/ https://github.com/crowdrec/datasets/tree/master/01.MovieTweetings/datasets/snapshots_10K
+
+
 The orchestrator:   
 **    updates git repositories   
 **    runs the specified computing environment (using Vagrant), in this case linux-centos   

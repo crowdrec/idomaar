@@ -60,7 +60,7 @@
   }
 
   # Execute algorithm
-  #exec { "sh /mnt/algo/itembasedrec.sh start":
+  #exec { "sh /mnt/algo/0mq_wrapper.sh start":
   #  cwd        => '/mnt/algo',
   #  path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
   #  require => Exec["mvn clean compile assembly:single"]

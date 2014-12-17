@@ -1,0 +1,40 @@
+### BEGIN INIT INFO
+# Provides:         kafka
+# Required-Start:	zookeper-server
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+#! /bin/sh
+
+DAEMON_START="/opt/apache/kafka/bin/kafka-server-start.sh"
+DAEMON_STOP=/opt/apache/kafka/bin/kafka-server-stop.sh
+DAEMON_OPTS=/opt/apache/kafka/config/server.properties
+
+NAME="kafka"
+DESC="kafka server"
+PIDFILE="/var/run/${NAME}.pid"
+
+test -x $DAEMON_START || exit 0
+
+. /lib/lsb/init-functions
+
+case "$1" in
+    start)
+    	log_begin_msg "Starting $DESC"
+        start-stop-daemon --start --quiet --background --make-pidfile --pidfile $PIDFILE --startas $DAEMON_START -- $DAEMON_OPTS
+	    log_end_msg $?
+	;;
+    stop)
+	    log_begin_msg "Stopping $DESC"
+	    start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
+	    log_end_msg $?
+	;;
+    status)
+    	status_of_proc -p "${PIDFILE}" "${DAEMON_START}" "${NAME}"
+	;;
+  *)
+	echo "Usage: kafka {start|stop|status}" >&2
+	    exit 1
+	;;
+esac

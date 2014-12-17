@@ -1,0 +1,37 @@
+
+BOX_NAME   		= 'ubuntu/trusty64'
+
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = '2'
+
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = BOX_NAME
+	 
+  config.vm.network :private_network, ip: "192.168.22.5"
+  config.vm.provider :virtualbox do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "2048"]
+  end
+
+
+  config.vm.provision "shell", path: "vagrant/01.java.sh"
+  config.vm.provision "shell", path: "vagrant/02.maven.sh"
+
+  # INSTALLATION WITH CLOUDERA PACKAGES
+  config.vm.provision "shell", path: "vagrant/cloudera/03.cloudera.sh"
+  config.vm.provision "shell", path: "vagrant/cloudera/04.idomaar-flume-plugin.sh"
+  config.vm.provision "shell", path: "vagrant/cloudera/05.kafka.sh"
+  config.vm.provision "shell", path: "vagrant/cloudera/06.create-kafka-topic.sh"
+
+
+  # INSTALLATION WITHOUT CLOUDERA PACKAGES
+  #config.vm.provision "shell", path: "vagrant/standard/03.kafka.sh"
+  #config.vm.provision "shell", path: "vagrant/standard/04.flume.sh"
+  #config.vm.provision "shell", path: "vagrant/standard/05.kafka-flume-plugin.sh"
+  #config.vm.provision "shell", path: "vagrant/standard/06.idomaar-flume-plugin.sh"
+  #config.vm.provision "shell", path: "vagrant/standard/07.create-kafka-topic.sh"
+
+
+end
+
