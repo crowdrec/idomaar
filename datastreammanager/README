@@ -7,20 +7,33 @@ The VM will be configured to run:
 In order to test idomaar flume task "vagrant ssh" and:
 
 # GITHUB -> KAFKA (NO STREAMING)
-flume-ng 	agent --name a1 --conf-file /vagrant/config/idomaar-TO-kafka.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/entities.dat -Didomaar.sourceType=file
+flume-ng 	agent --name a1 --conf-file /vagrant/config/idomaar-TO-kafka.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/test/data.dat -Didomaar.sourceType=file
 
 # GITHUB -> KAFKA (STREAMING)
-flume-ng agent --name a1 --conf-file /vagrant/config/idomaar-TO-kafka.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/relations.dat -Didomaar.sourceType=stream
+flume-ng agent --name a1 --conf-file /vagrant/config/idomaar-TO-kafka.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/test/data.dat -Didomaar.sourceType=stream
 
 # GITHUB -> S3
 # CHANGE a1.sinks.s3hdfs.hdfs.path value for your S3 BUCKET in configuration file
-flume-ng agent --name a1 --conf-file /vagrant/config/idomaar-TO-S3.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/entities.dat -Didomaar.sourceType=file
-
+flume-ng agent --name a1 --conf-file /vagrant/config/idomaar-TO-S3.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/test/data.dat -Didomaar.sourceType=file
 
 # KAFKA -> S3
 # CHANGE a1.sinks.s3hdfs.hdfs.path value for your S3 BUCKET in configuration file
 flume-ng agent --name a1 --conf-file /vagrant/config/kafka-TO-S3.conf
 
 # KAFKA -> LOCAL FILE SYSTEM
-# CHANGE a1.sinks.s3hdfs.hdfs.path value for your S3 BUCKET in configuration file
-flume-ng agent --name a1 --conf-file /vagrant/config/kafka-TO-fs.conf
+flume-ng agent --name a1 --conf-file /vagrant/config/kafka_data-TO-fs.conf
+flume-ng agent --name a1 --conf-file /vagrant/config/kafka_recommendation-TO-fs.conf
+
+## NOTES
+enable monitoring on flume with:
+-Dflume.monitoring.type=http -Dflume.monitoring.port=34545
+
+access metrics with:
+http://localhost:34545/metrics
+
+
+# TROUBLEHSOOTING
+If you have problem in starting kafka (see /var/log/kafka.log) with the following error:
+"INFO I wrote this conflicted ephemeral node ..."
+You need to stop the kafka process (kill- 9) and restart it with service kafka start
+This has been fixed in kafka 0.8.2 (https://issues.apache.org/jira/browse/KAFKA-1451), 

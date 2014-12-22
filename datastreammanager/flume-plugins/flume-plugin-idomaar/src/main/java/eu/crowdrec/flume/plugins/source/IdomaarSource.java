@@ -20,6 +20,7 @@
 package eu.crowdrec.flume.plugins.source;
 
 import org.apache.flume.Context;
+import org.apache.flume.Event;
 import org.apache.flume.EventDrivenSource;
 import org.apache.flume.conf.Configurable;
 import org.apache.flume.event.EventBuilder;
@@ -31,6 +32,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
 
 public class IdomaarSource extends AbstractSource implements EventDrivenSource,
 		Configurable {
@@ -162,6 +165,7 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
 
 
     					String[] fields = parseLine(line);
+    					String eventType = fields[0];
 
     					if(type.equals("stream")) {
     						
@@ -190,9 +194,15 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
     						logger.debug( "absoluteTs=" + ts.toString() + " relativeTs="+ (ts-firstTs) + " currentLine="+currentLine + " fields="+fields);
 
     					}
-
     					
-    					 getChannelProcessor().processEvent(EventBuilder.withBody(line, charset));
+    					Map<String, String> headers = new HashMap<String,String>();
+    					headers.put("eventType", eventType);
+    					
+    					logger.info(eventType);
+    					
+    					Event ev = EventBuilder.withBody(line, charset, headers);
+    					
+    					 getChannelProcessor().processEvent(ev);
     					 
 
     					} else {

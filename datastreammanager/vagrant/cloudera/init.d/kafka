@@ -9,7 +9,8 @@
 
 DAEMON_START="/opt/apache/kafka/bin/kafka-server-start.sh"
 DAEMON_STOP=/opt/apache/kafka/bin/kafka-server-stop.sh
-DAEMON_OPTS=/opt/apache/kafka/config/server.properties
+DAEMON_OPTS=/opt/apache/kafka/config/server-vagrant.properties
+DAEMONUSER=kafka
 
 NAME="kafka"
 DESC="kafka server"
@@ -22,7 +23,7 @@ test -x $DAEMON_START || exit 0
 case "$1" in
     start)
     	log_begin_msg "Starting $DESC"
-        start-stop-daemon --start --quiet --background --make-pidfile --pidfile $PIDFILE --startas $DAEMON_START -- $DAEMON_OPTS
+        start-stop-daemon --chuid $DAEMONUSER  --start --quiet --background --make-pidfile --pidfile $PIDFILE --startas /bin/bash -- -c "exec $DAEMON_START $DAEMON_OPTS > /var/log/kafka/kafka.log 2>&1"
 	    log_end_msg $?
 	;;
     stop)

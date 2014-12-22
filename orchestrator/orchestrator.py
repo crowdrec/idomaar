@@ -66,7 +66,6 @@ class Orchestrator(object):
 
         cmd = ['vagrant', 'up']
         env_vars = os.environ
-        env_vars['SHARED_ALGO'] = orchestrator.algorithm
 
         ret = subprocess.call(cmd, env=env_vars, cwd=self.computing_env)
         return ret
@@ -92,9 +91,15 @@ class Orchestrator(object):
                 print ("INFO: machine started")
                 print ("DO: read input")
 
-                entities = "/mnt/data/entities.dat"
-                relations = "/mnt/data/relations.dat"
-                msg = ['READ_INPUT', entities, relations]
+                # Tell the computing environment to start reading training data from the kafka queue
+                # Pass to the orchestrator the zookeeper address and the name of the topics
+
+                # TODO: zookeeper url has to be determined by vagrant from datastreammanager machine
+
+                zookeeper = "192.168.22.5:2181"
+                # THE FORMAT IS
+                # MESSAGE, ZOOKEEPER URL, ENTITIES TOPIC, RELATIONS TOPIC
+                msg = ['READ_INPUT', zookeeper, "entities", "relations"]
 
                 self._socket.send_multipart(msg)
                 self._state = OrchestratorState.reading_input
@@ -112,6 +117,7 @@ class Orchestrator(object):
                     print ("INFO: recommender correctly trained")
                     print ("DO: recommend")
 
+                    ## TODO: START FLUME AGENT THAT READ SOURCE DATASET AND SEND DATA TO KAFKA (STREAM AND RECOMMENDATION)
                     msg = ['RECOMMEND', '5', 'user:7', 'user:10', 'user:11', 'user:15', 'user:16', 'user:22', 'user:27', 'user:28'] # RECOMMEND RECLEN ENTITY1 ENTITY2...
                     self._socket.send_multipart(msg)
                     self._state = OrchestratorState.recommending
@@ -158,13 +164,11 @@ if __name__ == '__main__':
 
 
     orchestrator = Orchestrator()
-    orchestrator.algorithm = os.path.join(algodir, sys.argv[1])
-    orchestrator.dataset = sys.argv[3]
-    orchestrator.computing_env = os.path.join(computing_env_dir, sys.argv[2])
+    orchestrator.dataset = sys.argv[2]
+    orchestrator.computing_env = os.path.join(computing_env_dir, sys.argv[1])
     orchestrator.datastreammanager = os.path.join(basedir, "datastreammanager")
 
     print ("Idomaar base path: %s" % basedir)
-    print ("Algorithm path: %s" % orchestrator.algorithm)
     print ("Dataset URI: %s" % orchestrator.dataset)
     print ("Computing environment path: %s" % computing_env_dir)
 
@@ -173,6 +177,7 @@ if __name__ == '__main__':
         print ("error starting data stream manager")
         sys.exit(1)
 
+    # TODO: create/check data for validation
 
     status = orchestrator.start_vm()
     if status != 0:
@@ -181,9 +186,10 @@ if __name__ == '__main__':
 
     orchestrator.run()
 
+    # TODO: check if data stream channel is empty (http metrics)
     # TODO: test/evaluate the output
 
-    orchestrator.stop_vm()
+    #orchestrator.stop_vm()
     if status != 0:
         print ("error starting VM")
         sys.exit(1)
