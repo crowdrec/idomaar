@@ -39,15 +39,15 @@
 
   # Compile algorithm
   exec { "mvn clean compile assembly:single":
-    cwd        => '/vagrant/vagrant/algorithms/01.example/',
-    creates => "/vagrant/vagrant/algorithms/01.example/target/crowdrec-mahout-test-1.0-SNAPSHOT-jar-with-dependencies.jar",
+    cwd        => '/vagrant/algorithms/01.example/',
+    creates => "/vagrant/algorithms/01.example/target/crowdrec-mahout-test-1.0-SNAPSHOT-jar-with-dependencies.jar",
     path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
     timeout => 600
   } ->
 
   # Create startup script for algorithm
   exec { "cp itembasedrec.sh /etc/init.d/itembasedrec":
-    cwd        => '/vagrant/vagrant/algorithms/01.example/',
+    cwd        => '/vagrant/algorithms/01.example/',
     # creates => "/etc/init.d/itembasedrec",
     path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
     timeout => 5
