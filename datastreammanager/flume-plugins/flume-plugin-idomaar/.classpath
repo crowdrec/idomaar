@@ -34,4 +34,5 @@
   <classpathentry kind="var" path="M2_REPO/org/mortbay/jetty/servlet-api/2.5-20110124/servlet-api-2.5-20110124.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/google/code/gson/gson/2.2.2/gson-2.2.2.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/apache/mina/mina-core/2.0.4/mina-core-2.0.4.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/zeromq/jeromq/0.3.4/jeromq-0.3.4.jar"/>
 </classpath>

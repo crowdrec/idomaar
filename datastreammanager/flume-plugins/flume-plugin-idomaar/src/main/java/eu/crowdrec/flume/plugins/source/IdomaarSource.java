@@ -198,7 +198,6 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
     					Map<String, String> headers = new HashMap<String,String>();
     					headers.put("eventType", eventType);
     					
-    					logger.info(eventType);
     					
     					Event ev = EventBuilder.withBody(line, charset, headers);
     					

@@ -9,7 +9,8 @@ class OrchestratorState(Enum):
     ready = 1
     reading_input = 2
     training = 3
-    recommending = 4
+    startRecommending = 4
+    recommending = 5
 
 
 class Orchestrator(object):
@@ -84,42 +85,78 @@ class Orchestrator(object):
         print ("STATUS: waiting for machine to be ready")
         while True:
             print ("reading message")
-            message = self._socket.recv()
+            message = self._socket.recv_multipart()
             print ("read message: %s " % message)
 
-            if message == 'READY':
+            if message[0] == 'READY':
                 print ("INFO: machine started")
                 print ("DO: read input")
 
                 # Tell the computing environment to start reading training data from the kafka queue
                 # Pass to the orchestrator the zookeeper address and the name of the topics
 
+                # TODO THIS HAS TO BE PARAMETRIC
+                cmd = ["vagrant ssh -c 'flume-ng agent --name a1 --conf-file /vagrant/config/idomaar-TO-kafka.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/training/data.dat -Didomaar.sourceType=file'"]
+                env_vars = os.environ
+
+
                 # TODO: zookeeper url has to be determined by vagrant from datastreammanager machine
 
                 zookeeper = "192.168.22.5:2181"
                 # THE FORMAT IS
                 # MESSAGE, ZOOKEEPER URL, ENTITIES TOPIC, RELATIONS TOPIC
-                msg = ['READ_INPUT', zookeeper, "entities", "relations"]
+                msg = ['READ_INPUT', zookeeper, "data"]
 
                 self._socket.send_multipart(msg)
+
+                ## TODO MANAGE HOW TO CLOSE/TRACK EXIT CODE
+                print "Starting FLUME training task"
+                ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True    )
+
                 self._state = OrchestratorState.reading_input
 
-            elif message == 'OK':
+            elif message[0] == 'OK':
                 if self._state == OrchestratorState.reading_input:
-                    print ("INFO: input correctly read")
-                    print ("DO: train")
-
-                    msg = ['TRAIN']
-                    self._socket.send_multipart(msg)
-                    self._state = OrchestratorState.training
-
-                elif self._state == OrchestratorState.training:
                     print ("INFO: recommender correctly trained")
                     print ("DO: recommend")
 
-                    ## TODO: START FLUME AGENT THAT READ SOURCE DATASET AND SEND DATA TO KAFKA (STREAM AND RECOMMENDATION)
-                    msg = ['RECOMMEND', '5', 'user:7', 'user:10', 'user:11', 'user:15', 'user:16', 'user:22', 'user:27', 'user:28'] # RECOMMEND RECLEN ENTITY1 ENTITY2...
+               
+
+
+                    msg = ['START_RECOMMEND']
                     self._socket.send_multipart(msg)
+                    self._state = OrchestratorState.startRecommending
+
+                elif self._state == OrchestratorState.startRecommending:
+                    ## TODO START FLUME AGENT ON DATA STREAM MANAGER WITH DESTINATION TAKEN FROM 
+                    ## ZEROMQ MESSAGE MESSAGE[1]
+
+                    ## TODO: START FLUME AGENT THAT READ SOURCE DATASET AND SEND DATA TO KAFKA (STREAM AND RECOMMENDATION)
+                    ## msg = ['RECOMMEND', '5', 'user:7', 'user:10', 'user:11', 'user:15', 'user:16', 'user:22', 'user:27', 'user:28'] # RECOMMEND RECLEN ENTITY1 ENTITY2...
+                    # self._socket.send_multipart(msg)
+                    # TODO THIS HAS TO BE PARAMETRIC
+
+                    ## TODO IT HAS TO USE THE IP PARAMETERS 
+                    print "received message"
+                    print message[1]
+                    cmd = "vagrant ssh -c 'flume-ng agent --name a1 --conf-file /vagrant/config/kafka_recommendations-TO-fs.conf -Didomaar.recommendation.hostname=tcp://192.168.0.42:5560'"
+                    env_vars = os.environ
+
+                    ## TODO MANAGE HOW TO CLOSE/TRACK EXIT CODE
+                    print "Starting FLUME recommendation task"
+                    #TODO UNCOMMENT IT AND MANAGE THE START/STOP WITH SYSTEM SERVICE
+                    #ret = subprocess.Popen(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
+
+
+
+                    cmd = "vagrant ssh -c 'flume-ng agent --name a1 --conf-file /vagrant/config/idomaar-TO-kafka.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/test/data.dat -Didomaar.sourceType=file'"
+                    env_vars = os.environ
+
+                    ## TODO MANAGE HOW TO CLOSE/TRACK EXIT CODE
+                    print "Starting FLUME test task"
+                    ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
+
+
                     self._state = OrchestratorState.recommending
 
                 elif self._state == OrchestratorState.recommending:
@@ -129,13 +166,16 @@ class Orchestrator(object):
 
                     break
 
-            elif message == 'KO':
+            elif message[0] == 'KO':
 
                 if self._state == OrchestratorState.reading_input:
                     print ("WARN: machine failed to start. Process stopped.")
                 elif self._state == OrchestratorState.training:
                     print ("WARN: some errors while training the recommender. \
                         Process stopped.")
+                elif self._state == OrchestratorState.startRecommending:
+                    print ("WARN: some errors while starting the recommender engine.")
+                    print message
                 elif self._state == OrchestratorState.recommending:
                     print ("WARN: some errors while generating recommendations.\
                         Process stopped.")

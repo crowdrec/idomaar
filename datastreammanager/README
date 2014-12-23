@@ -24,6 +24,9 @@ flume-ng agent --name a1 --conf-file /vagrant/config/kafka-TO-S3.conf
 flume-ng agent --name a1 --conf-file /vagrant/config/kafka_data-TO-fs.conf
 flume-ng agent --name a1 --conf-file /vagrant/config/kafka_recommendation-TO-fs.conf
 
+## RECOMMENDATION CALLS
+flume-ng agent --name a1 --conf-file /vagrant/config/kafka_recommendations-TO-fs.conf
+
 ## NOTES
 enable monitoring on flume with:
 -Dflume.monitoring.type=http -Dflume.monitoring.port=34545

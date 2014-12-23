@@ -2,6 +2,10 @@ package eu.crowdrec.recs.mahout;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
 import java.util.List;
 
 import org.apache.mahout.cf.taste.common.TasteException;
@@ -23,7 +27,7 @@ public class ItembasedRec_batch {
 	private static final String OUTMSG_OK = "OK";
 	private static final String OUTMSG_KO = "KO";
 
-	private static final String RECOMMEND_CMD = "RECOMMEND";
+	private static final String START_RECOMMEND_CMD = "START_RECOMMEND";
 	private static final String TRAIN_CMD = "TRAIN";
 	private static final String READINPUT_CMD = "READ_INPUT";
 	private static final String STOP_CMD = "STOP";
@@ -35,8 +39,14 @@ public class ItembasedRec_batch {
 	private InternalDataModel dataModel;
 	
 	private String stagedir = null;
-	private Socket communication_socket = null;
-
+	private Socket socket_request = null;
+	private Socket socket_response = null;
+	
+	private static String zeromqBindAddress = "0.0.0.0";
+	private static String zeromqBindPort = "5560";
+	
+	
+	private RecommendationEngine recommendationEngine = null;
 	/**
 	 *
 	 * @param args
@@ -60,24 +70,40 @@ public class ItembasedRec_batch {
 		Context context = ZMQ.context(1);
 		System.out.println("ALGO: ZMQ created context");
 		System.out.println("ALGO: ZMQ creating socket");
-		Socket comm_sock = context.socket(ZMQ.REQ);
+		Socket socket_req = context.socket(ZMQ.REQ);
 		System.out.println("ALGO: ZMQ created context");
-		comm_sock.setReceiveTimeOut(10000);
+		socket_req.setReceiveTimeOut(10000);
 		System.out.println("ALGO: ZMQ setting timeout");
 		System.out.println("ALGO: ZMQ connecting to socket");
-		comm_sock.connect(comm);
+		socket_req.connect(comm);
 		System.out.println("ALGO: ZMQ connected to socket");
 
-		ItembasedRec_batch ubr = new ItembasedRec_batch(tmpOutDir, comm_sock);
+		Socket socket_res = context.socket(ZMQ.REP);
+		String localSocket = getZeromqBindAddress();
+		
+		
+		System.out.println("Creating zeromq socket " + localSocket);
+		socket_res.bind(localSocket);
+		
+		
+		
+		ItembasedRec_batch ubr = new ItembasedRec_batch(tmpOutDir, socket_req, socket_res);
 		ubr.run();
 
-		comm_sock.close();
+		socket_req.close();
+		socket_res.close();
 		context.term();
 	}
+	
+	private static String getZeromqBindAddress() {
+		return "tcp://" + zeromqBindAddress + ":" + zeromqBindPort;
+	}
 
-	public ItembasedRec_batch(String stagedir, Socket socket) throws IOException {
+	public ItembasedRec_batch(String stagedir, Socket socket_req, Socket socket_rep) throws IOException {
 		this.stagedir = stagedir;
-		this.communication_socket = socket;
+		this.socket_request = socket_req;
+		this.socket_response = socket_rep;
+		
 		dataModel = new InternalDataModel(stagedir, TMP_MAHOUT_USERRATINGS_FILENAME);
 
 
@@ -89,11 +115,11 @@ public class ItembasedRec_batch {
 		boolean stop = false;
 
 		System.out.println("ALGO: sending READY message");
-		communication_socket.send(OUTMSG_READY, 0);
+		socket_request.send(OUTMSG_READY, 0);
 		while ( !stop ) {
 			ZMsg recvMsg = null;
 			while ( recvMsg == null ) {
-				recvMsg = ZMsg.recvMsg(this.communication_socket);
+				recvMsg = ZMsg.recvMsg(this.socket_request);
 			}
 			System.out.println("ALGO: received message: " + recvMsg.toString());
 			ZFrame command = recvMsg.remove();
@@ -103,31 +129,25 @@ public class ItembasedRec_batch {
 				boolean success = cmdReadinput(recvMsg);
 
 				System.out.println(success ? "ALGO: input correctly read" : "ALGO: failing input read");
-				communication_socket.send(success ? OUTMSG_OK : OUTMSG_KO);
-			} else if (command.streq(TRAIN_CMD)) {
-				System.out.println("ALGO: running TRAIN cmd");
-				try {
-					recommender = createRecommender(stagedir + File.separator + TMP_MAHOUT_USERRATINGS_FILENAME);
+				socket_request.send(success ? OUTMSG_OK : OUTMSG_KO);
+			} else if (command.streq(START_RECOMMEND_CMD)) {
+				recommender = createRecommender(stagedir + File.separator + TMP_MAHOUT_USERRATINGS_FILENAME);
+				System.out.println("ALGO: recommender created");
 
-					System.out.println("ALGO: recommender created");
-					communication_socket.send(OUTMSG_OK);
-				} catch (TasteException e) {
-					communication_socket.send(OUTMSG_KO);
-				}
-			} else if (command.streq(RECOMMEND_CMD)) {
-				System.out.println("ALGO: running RECOMMEND cmd");
-				ZMsg recomms = null;
-				boolean success = (recommender != null && (recomms = cmdRecommend(recvMsg, recommender)).size() > 0 ) ;
+				startRecommendationServer(recommender);
+				System.out.println("ALGO: Started recommendation engine, zeromq bind to " + getZeromqBindAddress());
 
-				System.out.println(success ? "ALGO: recommedation completed correctly" : "ALGO: failure in generating recommendations");
-				if (success)
-					recomms.addFirst(OUTMSG_OK);
-				else
-					recomms.addFirst(OUTMSG_KO);
-
-				recomms.send(communication_socket);
+				socket_request.sendMore(OUTMSG_OK);
+				socket_request.sendMore(zeromqBindAddress);
+				socket_request.send(zeromqBindPort);
+				
 			} else if (command.streq(STOP_CMD)) {
-				communication_socket.send(OUTMSG_OK);
+				
+				if(recommendationEngine != null) {
+					recommendationEngine.stop();
+				}
+				
+				socket_request.send(OUTMSG_OK);
 				stop = true;
 			} else {
 				System.out.println("ALGO: unknown command");
@@ -137,58 +157,7 @@ public class ItembasedRec_batch {
 		System.out.println("shutdown");
 	}
 
-	/*
-		subject_etype    user
-		subject_eid    1001
-		request_timestamp    1404910899
-		request_properties    {"device":["smartphone", "android"], "location":"home"}
-		recomm_properties    { "explanation":"suggested by your close friends"}
-		linked_entities    [{"id":"movie:2001","rating":3.8,"rank":3}, {"id":"movie:2002","rating":4.3,"rank":1}, {"id":"movie:2003","rating":4,"rank":2,"explanation":{"reason":"you like","entity":"movie:2004"}}]
-	*/
-	protected ZMsg cmdRecommend(ZMsg msg, Recommender recommender) throws IOException, TasteException {
-		int reclen = Integer.parseInt( msg.remove().toString() );
-
-		ZMsg recomms = new ZMsg();
-		for (ZFrame entityIdStr : msg) {
-			String[] entityEls = entityIdStr.toString().split(":");
-			if ( entityEls.length == 2 ) {
-				String etype = entityEls[0];
-				long eid = Long.parseLong(entityEls[1]);
-				StringBuilder sb = new StringBuilder();
-				sb.append(etype).append("\t");
-				sb.append(Long.toString(eid)).append("\t");
-				sb.append(System.currentTimeMillis()).append("\t");
-				sb.append("{}").append("\t");
-				sb.append("{\"reclen\":").append(Integer.toString(reclen)).append("}").append("\t");
-				sb.append("[");
-				List<RecommendedItem> reclist = recommender.recommend(eid, reclen);
-				if ( reclist != null && reclist.size() > 0 ) {
-					int rank = 0;
-					for ( RecommendedItem item : reclist ) {
-						rank++;
-						if ( rank > 1 ) {
-							sb.append(",");
-						}
-						sb.append("{");
-						sb.append("\"id\":\"").append(item.getItemID()).append("\"");
-						sb.append(",");
-						sb.append("\"rating\":\"").append(item.getValue()).append("\"");
-						sb.append(",");
-						sb.append("\"rank\":\"").append(Integer.toString(rank)).append("\"");
-						sb.append("}");
-					}
-				} else {
-					// do nothing
-				}
-				sb.append("]");
-				recomms.addString(sb.toString());
-			} else {
-				// TODO: manage error
-			}
-		}
-
-		return recomms;
-	}
+	
 
 	/*
 	 * msg contains:
@@ -198,28 +167,35 @@ public class ItembasedRec_batch {
 	 *  - TOPIC NAME FOR ENTITIES
 	 */
 	protected boolean cmdReadinput(ZMsg msg) throws IOException {
-		if (msg.size() != 3) {
-			System.out.println("Wrong number of arguments expected 4, received " + msg.size());
+		if (msg.size() != 2) {
+			System.out.println("Wrong number of arguments expected 2, received " + msg.size());
 			return false;
 		}
 
 		String zookeeper_url = msg.remove().toString();
-		String entities_topic = msg.remove().toString();
-		String relations_topic = msg.remove().toString();
+		String topic = msg.remove().toString();
 
 			
 		// Init relations topic
-		KafkaConsumer k_relations = new KafkaConsumer(zookeeper_url, "A", relations_topic);
+		KafkaConsumer k_relations = new KafkaConsumer(zookeeper_url, "A", topic);
 		return k_relations.run(1, dataModel, TIMEOUT_TRAINING_RELATIONS);
 		
 	}
+	
+	protected void startRecommendationServer(Recommender recommender) {
+		recommendationEngine = new RecommendationEngine(socket_response, recommender);
+		
+		 Thread t = new Thread(recommendationEngine);
+	     t.start();
+	}
 
-	protected Recommender createRecommender(String filename) throws IOException, TasteException{
+	private Recommender createRecommender(String filename) throws IOException, TasteException{
 		DataModel model = dataModel.getMahoutFileDataModel();
 		ItemSimilarity similarity = new PearsonCorrelationSimilarity(model);
 		Recommender recommender = new GenericItemBasedRecommender(model, similarity);
 		return recommender;
+		
 	}
-
+	
 	
 }
