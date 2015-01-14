@@ -210,7 +210,7 @@ if __name__ == '__main__':
 
     print ("Idomaar base path: %s" % basedir)
     print ("Dataset URI: %s" % orchestrator.dataset)
-    print ("Computing environment path: %s" % computing_env_dir)
+    print ("Computing environment path: %s" % orchestrator.computing_env)
 
     status = orchestrator.start_datastream()
     if status != 0:

@@ -17,10 +17,10 @@ case $1 in
     start)
 	    echo "starting itembasedrec service" >> $LOG
         sleep 30
-        cd /vagrant/vagrant/algorithms/01.example
+        cd /vagrant/algorithms/01.example
         ORCH=`netstat -rn | grep "^0.0.0.0 " | cut -d " " -f10`
-        echo executing java -cp /vagrant/vagrant/algorithms/01.example/target/crowdrec-mahout-test-1.0-SNAPSHOT-jar-with-dependencies.jar eu.crowdrec.recs.mahout.ItembasedRec_batch /tmp tcp://$ORCH:2760 >> $LOG
-        java -cp /vagrant/vagrant/algorithms/01.example/target/crowdrec-mahout-test-1.0-SNAPSHOT-jar-with-dependencies.jar eu.crowdrec.recs.mahout.ItembasedRec_batch /tmp tcp://$ORCH:2760 >> $LOG &
+        echo executing java -cp /vagrant/algorithms/01.example/target/crowdrec-mahout-test-1.0-SNAPSHOT-jar-with-dependencies.jar eu.crowdrec.recs.mahout.ItembasedRec_batch /tmp tcp://$ORCH:2760 >> $LOG
+        java -cp /vagrant/algorithms/01.example/target/crowdrec-mahout-test-1.0-SNAPSHOT-jar-with-dependencies.jar eu.crowdrec.recs.mahout.ItembasedRec_batch /tmp tcp://$ORCH:2760 >> $LOG &
     ;;
     stop)
 	   echo "stopping itembasedrec service" >> $LOG

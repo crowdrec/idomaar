@@ -31,3 +31,7 @@ The orchestrator:
 **    requests for recommendations for some users (command RECOMMEND)   
 **    terminates the the algorthm (command SHUTDOWN)   
 Results will be stored in your local machine: /tmp/messaging/output_recommendations.1   
+
+
+TODO:
+- autostart di mahout
