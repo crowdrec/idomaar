@@ -1,5 +1,0 @@
-/vagrant/flume-plugins/flume-plugin-idomaar/src/main/java/eu/crowdrec/flume/plugins/source/FileStreamReader.java
-/vagrant/flume-plugins/flume-plugin-idomaar/src/main/java/eu/crowdrec/flume/plugins/source/HTTPStreamReader.java
-/vagrant/flume-plugins/flume-plugin-idomaar/src/main/java/eu/crowdrec/flume/plugins/source/IdomaarStreamReader.java
-/vagrant/flume-plugins/flume-plugin-idomaar/src/main/java/eu/crowdrec/flume/plugins/interceptor/IdomaarRecommendationInterceptor.java
-/vagrant/flume-plugins/flume-plugin-idomaar/src/main/java/eu/crowdrec/flume/plugins/source/IdomaarSource.java
