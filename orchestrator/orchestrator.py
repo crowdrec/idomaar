@@ -1,16 +1,34 @@
-
-import zmq
-import os
-from enum import Enum
-import subprocess
+import  zmq
+import  os
+from    enum import Enum
+import  subprocess
 
 
 class OrchestratorState(Enum):
     ready = 1
     reading_input = 2
     training = 3
-    startRecommending = 4
-    recommending = 5
+    recommending = 4
+    finalizing = 5
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+def log_info(msg):
+    print bcolors.OKBLUE + msg + bcolors.ENDC
+
+def log_error(msg):
+    print bcolors.FAIL + msg + bcolors.ENDC
+
+def log_warning(msg):
+    print bcolors.WARNING + msg + bcolors.ENDC
 
 
 class Orchestrator(object):
@@ -20,17 +38,26 @@ class Orchestrator(object):
         self._socket.bind("tcp://*:%s" % port)
         self._state = OrchestratorState.ready
 
-        self._dataset = None
+        self._training_uri = None
+        self._test_uri = None
         self._computing_env = None
         self._algorithm = None
 
     @property
-    def dataset(self):
-        return self._dataset
+    def training_uri(self):
+        return self._training_uri
 
-    @dataset.setter
-    def dataset(self, value):
-        self._dataset = value
+    @training_uri.setter
+    def training_uri(self, value):
+        self._training_uri = value
+
+    @property
+    def test_uri(self):
+        return self._test_uri
+
+    @test_uri.setter
+    def test_uri(self, value):
+        self._test_uri = value
 
     @property
     def computing_env(self):
@@ -48,9 +75,10 @@ class Orchestrator(object):
     def algorithm(self, value):
         self._algorithm = value
 
-    def start_datastream(self):
 
-        print ("DO: starting data stream")
+
+    def start_datastream(self):
+        log_info("DO: starting data stream")
 
         cmd = ['vagrant', 'up']
         env_vars = os.environ
@@ -58,12 +86,13 @@ class Orchestrator(object):
         ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager)
         return ret
 
+
     def start_vm(self):
         if self.computing_env is None:
-            print ("computing env not set!")
+            log_error("computing env not set!")
             return
 
-        print ("DO: starting machine")
+        log_info("DO: starting Computing environment")
 
         cmd = ['vagrant', 'up']
         env_vars = os.environ
@@ -71,116 +100,130 @@ class Orchestrator(object):
         ret = subprocess.call(cmd, env=env_vars, cwd=self.computing_env)
         return ret
 
+
     def stop_vm(self):
-        print ("DO: Stopping computing environment")
+        log_info("DO: Stopping computing environment")
         cmd = ['vagrant', 'halt']
         ret = subprocess.call(cmd, cwd=self.computing_env)
         return ret
 
+
     def run(self):
-        if self.dataset is None:
-            print("recommendation dataset is not set!")
+        if self.training_uri is None:
+            log_error("Training dataset is not set!")
             return
 
-        print ("STATUS: waiting for machine to be ready")
+        if self.test_uri is None:
+            log_error("Test dataset is not set!")
+            return
+
+        log_warning("WAIT: waiting for machine to be ready")
+
         while True:
-            print ("reading message")
             message = self._socket.recv_multipart()
-            print ("read message: %s " % message)
+            log_info("0MQ: received message: %s " % message)
 
             if message[0] == 'READY':
-                print ("INFO: machine started")
-                print ("DO: read input")
+                log_info("INFO: machine started")
 
                 # Tell the computing environment to start reading training data from the kafka queue
                 # Pass to the orchestrator the zookeeper address and the name of the topics
 
-                # TODO THIS HAS TO BE PARAMETRIC
-                cmd = ["vagrant ssh -c 'flume-ng agent --name a1 --conf-file /vagrant/config/idomaar-TO-kafka.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/training/data.dat -Didomaar.sourceType=file'"]
-                env_vars = os.environ
-
 
                 # TODO: zookeeper url has to be determined by vagrant from datastreammanager machine
-
                 zookeeper = "192.168.22.5:2181"
+
                 # THE FORMAT IS
                 # MESSAGE, ZOOKEEPER URL, ENTITIES TOPIC, RELATIONS TOPIC
-                msg = ['READ_INPUT', zookeeper, "data"]
+                msg = ['TRAIN', zookeeper, "data"]
+                log_warning("WAIT: sending message "+ ''.join(msg) +" and wait for response")
 
                 self._socket.send_multipart(msg)
 
-                ## TODO MANAGE HOW TO CLOSE/TRACK EXIT CODE
-                print "Starting FLUME training task"
-                ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True    )
+                # start log4j agent on datastreammanager to read training data
+                log_info("DO: starting data reader for training data uri=[" + orchestrator.training_uri + "]")
+
+                cmd = [
+                    "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + orchestrator.training_uri + " -Didomaar.sourceType=file'"]
+                env_vars = os.environ
+                ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
+
+                ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
+                ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
 
                 self._state = OrchestratorState.reading_input
 
             elif message[0] == 'OK':
                 if self._state == OrchestratorState.reading_input:
-                    print ("INFO: recommender correctly trained")
-                    print ("DO: recommend")
+                    log_info("INFO: recommender correctly trained")
 
-               
+                    # TODO DESTINATION FILE MUST BE PASSED FROM COMMAND LINE
+                    # TODO RECOMMENDATION HOSTNAME MUST BE EXTRACTED FROM MESSAGES
+                    recommendation_server_0mq = '192.168.22.100:5560'
 
-
-                    msg = ['START_RECOMMEND']
-                    self._socket.send_multipart(msg)
-                    self._state = OrchestratorState.startRecommending
-
-                elif self._state == OrchestratorState.startRecommending:
-                    ## TODO START FLUME AGENT ON DATA STREAM MANAGER WITH DESTINATION TAKEN FROM 
-                    ## ZEROMQ MESSAGE MESSAGE[1]
-
-                    ## TODO: START FLUME AGENT THAT READ SOURCE DATASET AND SEND DATA TO KAFKA (STREAM AND RECOMMENDATION)
-                    ## msg = ['RECOMMEND', '5', 'user:7', 'user:10', 'user:11', 'user:15', 'user:16', 'user:22', 'user:27', 'user:28'] # RECOMMEND RECLEN ENTITY1 ENTITY2...
-                    # self._socket.send_multipart(msg)
-                    # TODO THIS HAS TO BE PARAMETRIC
-
-                    ## TODO IT HAS TO USE THE IP PARAMETERS 
-                    print "received message"
-                    print message[1]
-                    cmd = "vagrant ssh -c 'flume-ng agent --name a1 --conf-file /vagrant/config/kafka_recommendations-TO-fs.conf -Didomaar.recommendation.hostname=tcp://192.168.0.42:5560'"
+                    log_warning("INFO: starting recommendation manager on data stream manager")
+                    cmd = ["vagrant ssh -c 'sudo /vagrant/flume-config/startup/recommendation_manager-agent start " + recommendation_server_0mq +"'"]
                     env_vars = os.environ
-
-                    ## TODO MANAGE HOW TO CLOSE/TRACK EXIT CODE
-                    print "Starting FLUME recommendation task"
-                    #TODO UNCOMMENT IT AND MANAGE THE START/STOP WITH SYSTEM SERVICE
-                    #ret = subprocess.Popen(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
-
-
-
-                    cmd = "vagrant ssh -c 'flume-ng agent --name a1 --conf-file /vagrant/config/idomaar-TO-kafka.conf -Didomaar.url=https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/test/data.dat -Didomaar.sourceType=file'"
-                    env_vars = os.environ
-
-                    ## TODO MANAGE HOW TO CLOSE/TRACK EXIT CODE
-                    print "Starting FLUME test task"
                     ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
 
+                    msg = ['START_RECOMMEND']
+                    log_warning("WAIT: sending message "+ ''.join(msg) +" and wait for response")
 
+                    self._socket.send_multipart(msg)
                     self._state = OrchestratorState.recommending
 
                 elif self._state == OrchestratorState.recommending:
-                    print ("INFO: recommendations correctly generated")
-                    recoms = self._socket.recv_multipart()
-                    print (recoms)
+                    log_info("INFO: recommender correctly started")
+
+                    log_warning("INFO: start sending test data to queue")
+
+                    ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
+                    cmd = [
+                        "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + orchestrator.test_uri + " -Didomaar.sourceType=file'"]
+
+                    ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
+
+                    ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
+                    ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
+
+                    ## remove me, is used to test recommendation interceptor
+                    break
+
+                    msg = ['STOP']
+                    log_warning("WAIT: sending message "+ ''.join(msg) +" and wait for response")
+
+                    self._socket.send_multipart(msg)
+                    self._state = OrchestratorState.finalizing
+
+                elif self._state == OrchestratorState.finalizing:
+                    log_info("INFO: recommendations correctly generated")
+
+                    # TODO HOW TO TRACK IF FLUME RECOMMENDATION MANAGER IS WAITING
+                    log_warning("INFO: stop recommendation manager on data stream manager")
+                    cmd = ["vagrant ssh -c 'sudo /vagrant/flume-config/startup/recommendation_manager-agent stop'"]
+                    env_vars = os.environ
+                    ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
+
+
+                    ## TODO RECEIVE SOME STATISTICS FROM THE COMPUTING ENVIRONMENT
 
                     break
 
             elif message[0] == 'KO':
 
                 if self._state == OrchestratorState.reading_input:
-                    print ("WARN: machine failed to start. Process stopped.")
+                    log_error("ERROR: machine failed to start. Process stopped.")
                 elif self._state == OrchestratorState.training:
-                    print ("WARN: some errors while training the recommender. \
-                        Process stopped.")
+                    log_error("ERROR: some errors while training the recommender. \
+                            Process stopped.")
                 elif self._state == OrchestratorState.startRecommending:
-                    print ("WARN: some errors while starting the recommender engine.")
+                    log_error("ERROR: some errors while starting the recommender engine.")
                     print message
                 elif self._state == OrchestratorState.recommending:
-                    print ("WARN: some errors while generating recommendations.\
-                        Process stopped.")
+                    log_error("ERROR: some errors while generating recommendations.\
+                            Process stopped.")
                 else:
-                    print ("unknown error")
+                    log_error("unknown error")
 
                 break
 
@@ -192,8 +235,15 @@ class Orchestrator(object):
         msg = ['STOP']
         self._socket.send_multipart(msg)
 
+        log_warning("INFO: stopping recommendation manager on data stream manager")
+        cmd = ["vagrant ssh -c 'sudo /vagrant/flume-config/startup/recommendation_manager-agent stop'"]
+        env_vars = os.environ
+        ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
+
+
         self._socket.close()
         self._context.term()
+
 
 if __name__ == '__main__':
     import sys
@@ -202,19 +252,20 @@ if __name__ == '__main__':
     algodir = os.path.join(basedir, "algorithms")
     computing_env_dir = os.path.join(basedir, "computingenvironments")
 
-
     orchestrator = Orchestrator()
-    orchestrator.dataset = sys.argv[2]
+    orchestrator.training_uri = sys.argv[2]
+    orchestrator.test_uri = sys.argv[3]
     orchestrator.computing_env = os.path.join(computing_env_dir, sys.argv[1])
     orchestrator.datastreammanager = os.path.join(basedir, "datastreammanager")
 
-    print ("Idomaar base path: %s" % basedir)
-    print ("Dataset URI: %s" % orchestrator.dataset)
-    print ("Computing environment path: %s" % orchestrator.computing_env)
+    log_info("Idomaar base path: %s" % basedir)
+    log_info("Training data URI: %s" % orchestrator.training_uri)
+    log_info("Test data URI: %s" % orchestrator.test_uri)
+    log_info("Computing environment path: %s" % orchestrator.computing_env)
 
     status = orchestrator.start_datastream()
     if status != 0:
-        print ("error starting data stream manager")
+        log_error("error starting data stream manager")
         sys.exit(1)
 
     # TODO: create/check data for validation
@@ -229,7 +280,7 @@ if __name__ == '__main__':
     # TODO: check if data stream channel is empty (http metrics)
     # TODO: test/evaluate the output
 
-    #orchestrator.stop_vm()
+    # orchestrator.stop_vm()
     if status != 0:
         print ("error starting VM")
         sys.exit(1)

@@ -43,6 +43,7 @@ public class RecommendationEngine implements Runnable {
 					
 					if (messageType.equals("RECOMMEND")) {
 						ZMsg msg = cmdRecommend(recvMsg);
+						System.out.println("Sending recommendation result " + msg);
 						msg.send(responder);
 					} else {
 						System.out.println("Unable to parse event " + messageType);

@@ -24,5 +24,5 @@ cp /vagrant/vagrant/cloudera/init.d/kafka /etc/init.d/
 chmod +x /etc/init.d/kafka
 
 service kafka start
-update-rc.d kafka defaults
+update-rc.d kafka defaults 98
 

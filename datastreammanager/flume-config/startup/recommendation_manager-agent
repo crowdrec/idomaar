@@ -1,0 +1,141 @@
+#!/bin/bash
+. /lib/lsb/init-functions
+
+. /usr/lib/bigtop-utils/bigtop-detect-javahome
+
+STATUS_RUNNING=0
+STATUS_DEAD=1
+STATUS_DEAD_AND_LOCK=2
+STATUS_NOT_RUNNING=3
+
+ERROR_PROGRAM_NOT_INSTALLED=5
+
+IDOMAAR_RECOMMENDATION=$2
+
+FLUME_LOG_DIR=/var/log/flume-ng/
+FLUME_CONF_DIR=/vagrant/flume-config/log4j/recommendation-manager
+FLUME_RUN_DIR=/var/run/recommendation-manager
+FLUME_HOME=/usr/lib/flume-ng
+FLUME_USER=flume
+FLUME_CONF_FILE=/vagrant/flume-config/config/kafka_recommendations-TO-log.conf
+
+
+FLUME_LOCK_DIR="/var/lock/subsys/"
+LOCKFILE="${FLUME_LOCK_DIR}/recommendation-manager"
+desc="Recommendation manager agent daemon"
+
+EXEC_PATH=/usr/bin/flume-ng
+FLUME_PID_FILE=${FLUME_RUN_DIR}/recommendation-manager.pid
+
+# These directories may be tmpfs and may or may not exist
+# depending on the OS (ex: /var/lock/subsys does not exist on debian/ubuntu)
+for dir in "$FLUME_RUN_DIR" "$FLUME_LOCK_DIR"; do
+  [ -d "${dir}" ] || install -d -m 0755 -o $FLUME_USER -g $FLUME_USER ${dir}
+done
+
+
+DEFAULT_FLUME_AGENT_NAME="a1"
+FLUME_AGENT_NAME=${FLUME_AGENT_NAME:-${DEFAULT_FLUME_AGENT_NAME}}
+FLUME_SHUTDOWN_TIMEOUT=${FLUME_SHUTDOWN_TIMEOUT:-60}
+
+start() {
+  [ -x $exec ] || exit $ERROR_PROGRAM_NOT_INSTALLED
+
+  checkstatus > /dev/null 2>&1
+  status=$?
+  if [ "$status" -eq "$STATUS_RUNNING" ]; then
+    exit 0
+  fi
+
+  log_success_msg "Starting $desc (flume-ng-agent): "
+  /bin/su -s /bin/bash -c "/bin/bash -c 'echo \$\$ >${FLUME_PID_FILE} && exec ${EXEC_PATH} agent --conf $FLUME_CONF_DIR --conf-file $FLUME_CONF_FILE --name $FLUME_AGENT_NAME -Didomaar.recommendation.hostname=tcp://$IDOMAAR_RECOMMENDATION >>${FLUME_LOG_DIR}/recommendation-manager.init.log 2>&1' &" $FLUME_USER
+  RETVAL=$?
+  [ $RETVAL -eq 0 ] && touch $LOCKFILE
+  return $RETVAL
+}
+
+stop() {
+  if [ ! -e $FLUME_PID_FILE ]; then
+    log_success_msg "Flume agent is not running"
+    return 0
+  fi
+
+  FLUME_PID=`cat $FLUME_PID_FILE`
+  if [ -n $FLUME_PID ]; then
+    kill -TERM ${FLUME_PID} &>/dev/null
+    for i in `seq 1 ${FLUME_SHUTDOWN_TIMEOUT}` ; do
+      kill -0 ${FLUME_PID} &>/dev/null || break
+      sleep 1
+    done
+    if [ ! kill -0 ${FLUME_PID} &>/dev/null ]; then
+      kill -KILL ${FLUME_PID} &>/dev/null
+    fi
+  fi
+
+  RETVAL=$?
+
+  if [ $RETVAL -eq 0 ]; then
+     rm -f $LOCKFILE $FLUME_PID_FILE
+     log_success_msg "Stopped ${desc}: "
+  else
+     log_failure_msg "Failed to stop ${desc}. Return value: $RETVAL"
+  fi
+
+  return 0
+}
+
+restart() {
+  stop
+  start
+}
+
+checkstatus(){
+  pidofproc -p $FLUME_PID_FILE java > /dev/null
+  status=$?
+
+  case "$status" in
+    $STATUS_RUNNING)
+      log_success_msg "Flume NG agent is running"
+      ;;
+    $STATUS_DEAD)
+      log_failure_msg "Flume NG agent is dead and pid file exists"
+      ;;
+    $STATUS_DEAD_AND_LOCK)
+      log_failure_msg "Flume NG agent is dead and lock file exists"
+      ;;
+    $STATUS_NOT_RUNNING)
+      log_failure_msg "Flume NG agent is not running"
+      ;;
+    *)
+      log_failure_msg "Flume NG agent status is unknown"
+      ;;
+  esac
+  return $status
+}
+
+condrestart(){
+  [ -e ${LOCKFILE} ] && restart || :
+}
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  status)
+    checkstatus
+    ;;
+  restart)
+    restart
+    ;;
+  condrestart|try-restart)
+    condrestart
+    ;;
+  *)
+    echo $"Usage: $0 {start|stop|status|restart|try-restart|condrestart}"
+    exit 1
+esac
+
+exit $RETVAL

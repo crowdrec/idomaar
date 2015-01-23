@@ -1,0 +1,6 @@
+eu/crowdrec/flume/plugins/interceptor/IdomaarRecommendationInterceptor$Builder.class
+eu/crowdrec/flume/plugins/source/IdomaarStreamReader.class
+eu/crowdrec/flume/plugins/source/IdomaarSource.class
+eu/crowdrec/flume/plugins/source/FileStreamReader.class
+eu/crowdrec/flume/plugins/interceptor/IdomaarRecommendationInterceptor.class
+eu/crowdrec/flume/plugins/source/HTTPStreamReader.class

@@ -1,0 +1,6 @@
+org/apache/flume/source/kafka/KafkaSourceEmbeddedZookeeper.class
+org/apache/flume/source/kafka/TestKafkaSource$1.class
+org/apache/flume/source/kafka/TestKafkaSource$2.class
+org/apache/flume/source/kafka/TestKafkaSourceUtil.class
+org/apache/flume/source/kafka/KafkaSourceEmbeddedKafka.class
+org/apache/flume/source/kafka/TestKafkaSource.class

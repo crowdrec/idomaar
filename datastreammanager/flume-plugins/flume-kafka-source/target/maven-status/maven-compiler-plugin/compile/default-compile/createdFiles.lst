@@ -1,0 +1,3 @@
+org/apache/flume/source/kafka/KafkaSourceUtil.class
+org/apache/flume/source/kafka/KafkaSourceConstants.class
+org/apache/flume/source/kafka/KafkaSource.class

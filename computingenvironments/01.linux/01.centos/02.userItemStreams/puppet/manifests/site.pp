@@ -39,9 +39,9 @@
   } ->
   
   # Create startup script for algorithm
-#  exec { "cp newsstreamrec.sh /etc/init.d/newsstreamrec":
+#  exec { "cp newsstreamrec.sh /etc/script/newsstreamrec":
 #    cwd        => '/mnt/algo',
-#    creates => "/etc/init.d/newsstreamrec",
+#    creates => "/etc/script/newsstreamrec",
 #    path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
 #    timeout => 5
 #  } ->  

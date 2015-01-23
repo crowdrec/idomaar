@@ -23,7 +23,6 @@ public class ItembasedRec_batch {
 
 	private static final String START_RECOMMEND_CMD = "START_RECOMMEND";
 	private static final String TRAIN_CMD = "TRAIN";
-	private static final String READINPUT_CMD = "READ_INPUT";
 	private static final String STOP_CMD = "STOP";
 
 
@@ -80,13 +79,14 @@ public class ItembasedRec_batch {
 		socket_res.bind(localSocket);
 		
 		
+		while(true) {
+			ItembasedRec_batch ubr = new ItembasedRec_batch(tmpOutDir, socket_req, socket_res);
+			ubr.run();
+		}
 		
-		ItembasedRec_batch ubr = new ItembasedRec_batch(tmpOutDir, socket_req, socket_res);
-		ubr.run();
-
-		socket_req.close();
-		socket_res.close();
-		context.term();
+		//socket_req.close();
+		//socket_res.close();
+		//context.term();
 	}
 	
 	private static String getZeromqBindAddress() {
@@ -118,7 +118,7 @@ public class ItembasedRec_batch {
 			System.out.println("ALGO: received message: " + recvMsg.toString());
 			ZFrame command = recvMsg.remove();
 
-			if (command.streq(READINPUT_CMD)) {
+			if (command.streq(TRAIN_CMD)) {
 				System.out.println("ALGO: running READ INPUT cmd");
 				boolean success = cmdReadinput(recvMsg);
 

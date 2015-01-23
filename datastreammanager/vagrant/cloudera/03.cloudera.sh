@@ -12,3 +12,8 @@ apt-get -y install flume-ng zookeeper-server
 service zookeeper-server start
 update-rc.d zookeeper-server enable
 
+
+# REMOVE DEBUG OPTION IN FLUME-NG AGENT START
+sed -i 's/CLEAN_FLAG=1/CLEAN_FLAG=0/' /usr/lib/flume-ng/bin/flume-ng
+
+

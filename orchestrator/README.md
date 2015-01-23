@@ -11,14 +11,15 @@ e.g., on debian-based env: sudo apt-get install vagrant
 * Install virtual box 
 
 * run orchestrator
-orchestrator.py computing_env dataset_base_uri
+orchestrator.py computing_environment training_data_uri test_data_uri
 
 
-e.g. python2.7 orchestrator.py 01.linux/01.centos/01.mahout/ https://github.com/crowdrec/datasets/tree/master/01.MovieTweetings/datasets/snapshots_10K
+e.g. python2.7 orchestrator.py 01.linux/01.centos/01.mahout/ https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/training/data.dat https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/test/data.dat /tmp/
+
 
 The orchestrator:   
 **    updates git repositories
-**    run the data stream manager virtual machine
+**    run the orhcestrator virtual machine
 **    runs the specified computing environment (using Vagrant)
 **    provisions the computing environment (using Puppet):   
 ***        prepares the directory between the orchestrator and the computing environment   
@@ -33,5 +34,8 @@ The orchestrator:
 Results will be stored in your local machine: /tmp/messaging/output_recommendations.1   
 
 
-TODO:
-- autostart di mahout
+ORCHESTRATOR MESSAGES FLOW
+
+READY (CE) -> TRAIN (O) -> OK (CE) -> START_RECOMMEND (O) -> OK (KE)
+
+

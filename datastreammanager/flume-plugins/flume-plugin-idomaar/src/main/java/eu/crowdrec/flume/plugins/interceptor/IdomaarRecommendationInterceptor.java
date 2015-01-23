@@ -8,6 +8,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMsg;
 import org.zeromq.ZMQ.Socket;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
@@ -16,6 +17,7 @@ import org.apache.flume.interceptor.Interceptor;
 public class IdomaarRecommendationInterceptor implements Interceptor {
 
 private Socket requester;
+private String _hostname;
 private org.zeromq.ZMQ.Context zmqContext;
 private static final Logger logger = LoggerFactory
 .getLogger(eu.crowdrec.flume.plugins.interceptor.IdomaarRecommendationInterceptor.class);
@@ -24,17 +26,16 @@ private static String fieldSeparator = "\\t";
 
 public IdomaarRecommendationInterceptor(String hostname){
  
-	
+	_hostname = hostname;
 	zmqContext = ZMQ.context(1);
     requester = zmqContext.socket(ZMQ.REQ);
-    requester.connect(hostname);
     
-    
-    System.out.println("Launched 0MQ client, bind to " + hostname);
 }
 
 @Override
 public void initialize() {
+    requester.connect(_hostname);
+    logger.info("Launched 0MQ client, bind to " + _hostname);
    
 }
 
@@ -60,19 +61,28 @@ public Event intercept(Event event) {
     	String[] parsedRequest = parseRequest(body);
     	if(parsedRequest[0].equals("EOF")) {
     		logger.info("Received end of recommendation file");
+
+    		
     	} else {
     	    logger.info("Requesting recommendation for event ["+body+"]");
     	    if(parsedRequest.length < 5) {
     	    	logger.error("Received wrong data format for event ["+body+"]");
     	    } else {
+    	    	logger.info("1");
         	    requester.sendMore("RECOMMEND");
+    	    	logger.info("2");
                 requester.sendMore(parsedRequest[3]);
-                requester.send(parsedRequest[4]);
-               
-                String reply = requester.recvStr (0);
+    	    	logger.info("3");
+                requester.send(parsedRequest[4], ZMQ.NOBLOCK);
+    	    	logger.info("4");
+                
+    	    	// TODO MANAGE TIMEOUT
+                ZMsg reply =  ZMsg.recvMsg(requester);
+                
                 logger.info("Received recommendation [" + reply + "]");
 
-                event.setBody(reply.getBytes(Charset.forName("UTF-8")));
+                // TODO PARSING RESPONSE AND ADD IT TO RESULT
+                event.setBody( reply.remove().toString().getBytes(Charset.forName("UTF-8")));
     	    }     	    
 
     	    
@@ -80,7 +90,7 @@ public Event intercept(Event event) {
     	
         
     } catch(Exception ex) {
-    	logger.info("Exception", ex);
+    	logger.error("Exception", ex);
     }
     
        

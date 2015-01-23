@@ -42,7 +42,7 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
 			.getLogger(eu.crowdrec.flume.plugins.source.IdomaarSource.class);
 
 	// private static SOURCE_TYPES = { "stream", "file" };
-	// private static SOURCE_PROTOCOL = ['http', 'https'];
+	// private static SOURCE_PROTOCOL = ['http', 'https', 'file'];
 
 	private String rowSeparator;
 	private String fieldSeparator;
@@ -57,7 +57,7 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
 
 	private boolean hasHeader = true;
 
-	private HTTPStreamReader streamReader;
+	private IdomaarStreamReader streamReader;
 	private Integer currentLine = 0;
 
 	@Override
@@ -72,6 +72,7 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
 		this.minimumIntervalBetweenMessages = context.getLong(
 				"minimumIntervalBetweenMessages", (long) 500);
 
+		
 		
 		if(System.getProperty("idomaar.url") != null) {
 			this.url = System.getProperty("idomaar.url");
@@ -137,11 +138,17 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
 
 		String schema = uri.getScheme();
 
+		//TODO we need to enumerate all the files and foreach file in the directory send it to flume channel
+		// currently it use only the specified file
+		
 		if(schema.equalsIgnoreCase("https") || schema.equalsIgnoreCase("http")) {
 			streamReader = new HTTPStreamReader(uri.toURL());
 			logger.info("Initialized stream for scheme " + uri.getScheme());
+		} else if (schema.equalsIgnoreCase("file")) {
+			streamReader = new FileStreamReader(uri.toURL());
+			logger.info("Initialized stream for scheme " + uri.getScheme());
 		} else {
-			logger.error("Unable to read stream for scheme " + uri.getScheme());
+			logger.error("Unable to read stream for scheme [" + uri.getScheme() + "]");
 		}
 		
 		if(streamReader != null) {
@@ -151,15 +158,13 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
 		      
 		    			
 		      String data = streamReader.getData();
-		      logger.debug("CurrentLine=["+currentLine+"] data=[" + data.toString() + "]");
 			
 
     			while ( data != null) {
 
     				 for(String line:getLines(data)) {
     					 
-    					logger.debug("CurrentLine=["+currentLine+"] line=[" + line + "]");
-
+    					
     					// skip first line if source data has header
     					if(!hasHeader || currentLine>0) {
 
@@ -197,12 +202,12 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
     					
     					Map<String, String> headers = new HashMap<String,String>();
     					headers.put("eventType", eventType);
-    					
-    					
+
     					Event ev = EventBuilder.withBody(line, charset, headers);
     					
-    					 getChannelProcessor().processEvent(ev);
-    					 
+    					getChannelProcessor().processEvent(ev);
+    					logger.debug("CurrentLine=["+currentLine+"] line=[" + line + "] eventType=["+eventType+"]");
+ 
 
     					} else {
     						logger.debug("CurrentLine=["+currentLine+"] header=[" + line + "]");

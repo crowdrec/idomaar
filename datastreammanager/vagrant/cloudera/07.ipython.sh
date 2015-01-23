@@ -1,11 +1,11 @@
 apt-get -y install spark-python ipython-notebook python-pip python-dev python-numpy
-pip install pyspark
+#pip install pyspark
 useradd ipython
 mkdir /home/ipython
-chown ipython:ipython
+chown ipython:ipython /home/ipython
 
 su - ipython
-python profile create pyspark
+ipython profile create pyspark
 
 cp /vagrant/vagrant/cloudera/ipython/00-pyspark-setup.py .ipython/profile_pyspark/startup
 cp /vagrant/vagrant/cloudera/ipython/ipython_notebook_config.py .ipython/profile_pyspark/

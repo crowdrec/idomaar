@@ -48,7 +48,7 @@
   # Create startup script for algorithm
   exec { "cp itembasedrec.sh /etc/init.d/itembasedrec":
     cwd        => '/vagrant/algorithms/01.example/',
-    # creates => "/etc/init.d/itembasedrec",
+    # creates => "/etc/script/itembasedrec",
     path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
     timeout => 5
   } ->  

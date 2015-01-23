@@ -4,7 +4,7 @@ class apt::debian::unstable {
   include apt
 
   # deb http://debian.mirror.iweb.ca/debian/ unstable main contrib non-free
-  # deb-src http://debian.mirror.iweb.ca/debian/ unstable main contrib non-free
+  # deb-log4j-kafka-source http://debian.mirror.iweb.ca/debian/ unstable main contrib non-free
   # Key: 46925553  Server: subkeys.pgp.net
   # debian-keyring
   # debian-archive-keyring

@@ -1,0 +1,4 @@
+/vagrant/flume-plugins/flume-kafka-source/src/test/java/org/apache/flume/source/kafka/TestKafkaSource.java
+/vagrant/flume-plugins/flume-kafka-source/src/test/java/org/apache/flume/source/kafka/KafkaSourceEmbeddedKafka.java
+/vagrant/flume-plugins/flume-kafka-source/src/test/java/org/apache/flume/source/kafka/TestKafkaSourceUtil.java
+/vagrant/flume-plugins/flume-kafka-source/src/test/java/org/apache/flume/source/kafka/KafkaSourceEmbeddedZookeeper.java

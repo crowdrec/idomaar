@@ -1,0 +1,9 @@
+Source code from:
+https://github.com/cloudera/flume-ng
+
+branch:
+origin/cdh5-1.5.0_5.3.0
+
+applied patch:
+https://git-wip-us.apache.org/repos/asf?p=flume.git;a=blobdiff;f=flume-ng-sources/flume-kafka-source/src/main/java/org/apache/flume/source/kafka/KafkaSource.java;h=00a81c666985a8ce4f071fe075aea49235860226;hp=7bc03da6c0ee9cd256561708515c83bf2cf6149e;hb=199684b;hpb=84465664c21ed0a1261f015a010b94a98153c8d7
+

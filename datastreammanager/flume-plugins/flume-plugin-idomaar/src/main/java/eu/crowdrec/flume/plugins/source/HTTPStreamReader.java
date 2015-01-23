@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-public class HTTPStreamReader {
+public class HTTPStreamReader implements IdomaarStreamReader {
 
 	    private BufferedReader reader;
 	    

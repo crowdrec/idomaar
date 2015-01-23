@@ -39,4 +39,8 @@ http://localhost:34545/metrics
 If you have problem in starting kafka (see /var/log/kafka.log) with the following error:
 "INFO I wrote this conflicted ephemeral node ..."
 You need to stop the kafka process (kill- 9) and restart it with service kafka start
-This has been fixed in kafka 0.8.2 (https://issues.apache.org/jira/browse/KAFKA-1451), 
+This has been fixed in kafka 0.8.2 (https://issues.apache.org/jira/browse/KAFKA-1451),
+
+
+# Debugging kafka messages
+/opt/apache/kafka/bin/kafka-simple-consumer-shell.sh  --broker-list 192.168.22.5:9092 --topic recommendations --partition 0
