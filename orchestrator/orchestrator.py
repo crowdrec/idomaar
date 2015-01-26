@@ -144,7 +144,7 @@ class Orchestrator(object):
                 log_info("DO: starting data reader for training data uri=[" + orchestrator.training_uri + "]")
 
                 cmd = [
-                    "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + orchestrator.training_uri + " -Didomaar.sourceType=file'"]
+                    "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka_kafka_channel.conf -Didomaar.url=" + orchestrator.training_uri + " -Didomaar.sourceType=file'"]
                 env_vars = os.environ
                 ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
 
@@ -166,20 +166,12 @@ class Orchestrator(object):
                     env_vars = os.environ
                     ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
 
-                    msg = ['START_RECOMMEND']
-                    log_warning("WAIT: sending message "+ ''.join(msg) +" and wait for response")
-
-                    self._socket.send_multipart(msg)
-                    self._state = OrchestratorState.recommending
-
-                elif self._state == OrchestratorState.recommending:
-                    log_info("INFO: recommender correctly started")
 
                     log_warning("INFO: start sending test data to queue")
 
                     ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
                     cmd = [
-                        "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + orchestrator.test_uri + " -Didomaar.sourceType=file'"]
+                        "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka_kafka_channel.conf -Didomaar.url=" + orchestrator.test_uri + " -Didomaar.sourceType=file'"]
 
                     ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
 
@@ -189,7 +181,7 @@ class Orchestrator(object):
                     ## remove me, is used to test recommendation interceptor
                     break
 
-                    msg = ['STOP']
+                    msg = ['FINALIZE']
                     log_warning("WAIT: sending message "+ ''.join(msg) +" and wait for response")
 
                     self._socket.send_multipart(msg)

@@ -14,7 +14,7 @@ e.g., on debian-based env: sudo apt-get install vagrant
 orchestrator.py computing_environment training_data_uri test_data_uri
 
 
-e.g. python2.7 orchestrator.py 01.linux/01.centos/01.mahout/ https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/training/data.dat https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/test/data.dat /tmp/
+e.g. python2.7 orchestrator.py 01.linux/01.centos/01.mahout/ https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/training/data.dat https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/test/data.dat
 
 
 The orchestrator:   
@@ -36,6 +36,6 @@ Results will be stored in your local machine: /tmp/messaging/output_recommendati
 
 ORCHESTRATOR MESSAGES FLOW
 
-READY (CE) -> TRAIN (O) -> OK (CE) -> START_RECOMMEND (O) -> OK (KE)
+READY (CE) -> TRAIN (O) -> OK (CE) -> FINALIZE (O) -> OK (KE)
 
 
