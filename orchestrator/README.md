@@ -36,6 +36,6 @@ Results will be stored in your local machine: /tmp/messaging/output_recommendati
 
 ORCHESTRATOR MESSAGES FLOW
 
-READY (CE) -> TRAIN (O) -> OK (CE) -> START_RECOMMEND (O) -> OK (KE)
+READY (CE) -> TRAIN (O) -> OK (CE) -> FINALIZE (O) -> OK (KE)
 
 
