@@ -29,7 +29,7 @@ public class InternalDataModel {
 		return new FileDataModel(ratings_file);
 	}
 	
-	protected synchronized boolean writeRelation( byte[] message) throws NumberFormatException, IOException {
+	protected synchronized boolean writeRelation( byte[] message, boolean writeData) throws NumberFormatException, IOException {
 		
 			String line = new String(message, "UTF-8");
 			
@@ -80,7 +80,7 @@ public class InternalDataModel {
 							}
 						}
 					}
-					if ( userid != null && itemid != null ) {
+					if ( userid != null && itemid != null && writeData) {
 						ratings_writer.append(userid);
 						ratings_writer.append(",");
 						ratings_writer.append(itemid);

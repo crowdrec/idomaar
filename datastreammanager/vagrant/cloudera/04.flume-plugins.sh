@@ -6,7 +6,7 @@ cp target/flume-plugin-idomaar-*.jar /usr/lib/flume-ng/lib
 cp target/lib/jeromq-* /usr/lib/flume-ng/lib
 
 
-# INSTALL PATCHED KAFKA PLUGIN
+# INSTALL PATCHED KAFKA PLUGIN, RESOLVE ERROR IN PARTITION KEY
 cd /vagrant/flume-plugins/flume-kafka-source
 /opt/apache/apache-maven-3.2.3/bin/mvn clean install
 

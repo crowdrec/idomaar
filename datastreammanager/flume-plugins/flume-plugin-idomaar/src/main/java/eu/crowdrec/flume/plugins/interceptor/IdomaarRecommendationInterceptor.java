@@ -50,9 +50,7 @@ public Event intercept(Event event) {
     // These are the event's headers
     Map<String, String> headers = event.getHeaders();
 
-    // TODO EXTRACT RECOMMENDATION INFO
     // TODO CALCULATE RESPONSE TIME
-    // TODO CREATE RESPONSE EVENT
     // TODO IF RECEIVED EOF EXIT AGENT
     
     
@@ -68,21 +66,20 @@ public Event intercept(Event event) {
     	    if(parsedRequest.length < 5) {
     	    	logger.error("Received wrong data format for event ["+body+"]");
     	    } else {
-    	    	logger.info("1");
         	    requester.sendMore("RECOMMEND");
-    	    	logger.info("2");
                 requester.sendMore(parsedRequest[3]);
-    	    	logger.info("3");
                 requester.send(parsedRequest[4], ZMQ.NOBLOCK);
-    	    	logger.info("4");
                 
     	    	// TODO MANAGE TIMEOUT
                 ZMsg reply =  ZMsg.recvMsg(requester);
                 
                 logger.info("Received recommendation [" + reply + "]");
 
+                String response = body + fieldSeparator + reply.remove().toString();
+
+
                 // TODO PARSING RESPONSE AND ADD IT TO RESULT
-                event.setBody( reply.remove().toString().getBytes(Charset.forName("UTF-8")));
+                event.setBody( response.getBytes(Charset.forName("UTF-8")));
     	    }     	    
 
     	    
@@ -95,6 +92,7 @@ public Event intercept(Event event) {
     
        
     // Let the enriched event go
+    logger.info("Sending event [" + new String(event.getBody()) + "]");
     return event;
 }
 
@@ -125,7 +123,6 @@ public void close() {
 
 public static class Builder implements Interceptor.Builder {
 	private String hostname;
-	private int		recommendationLength;
 	
     @Override
     public Interceptor build() {

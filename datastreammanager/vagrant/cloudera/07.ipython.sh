@@ -1,5 +1,7 @@
 apt-get -y install spark-python ipython-notebook python-pip python-dev python-numpy
 #pip install pyspark
+pip install runipy
+
 useradd ipython
 mkdir /home/ipython
 chown ipython:ipython /home/ipython

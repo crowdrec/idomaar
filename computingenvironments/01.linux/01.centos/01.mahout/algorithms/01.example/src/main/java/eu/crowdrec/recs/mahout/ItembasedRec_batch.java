@@ -20,11 +20,10 @@ public class ItembasedRec_batch {
 	private static final String OUTMSG_READY = "READY";
 	private static final String OUTMSG_OK = "OK";
 	private static final String OUTMSG_KO = "KO";
+	private static final String OUTMSG_FINISH = "FINISH";
 
-	private static final String START_RECOMMEND_CMD = "START_RECOMMEND";
 	private static final String TRAIN_CMD = "TRAIN";
-	private static final String STOP_CMD = "STOP";
-
+	private static final String RECOMMEND_CMD = "START_RECOMMEND";
 
 	private static final int TIMEOUT_TRAINING_RELATIONS = 120;
 	private static final String TMP_MAHOUT_USERRATINGS_FILENAME = "mahout_ratings.csv";
@@ -38,6 +37,10 @@ public class ItembasedRec_batch {
 	private static String zeromqBindAddress = "0.0.0.0";
 	private static String zeromqBindPort = "5560";
 	
+	private String zookeeper_url;
+	private String topic;
+	
+	KafkaConsumer k_relations;
 	
 	private RecommendationEngine recommendationEngine = null;
 	/**
@@ -98,6 +101,7 @@ public class ItembasedRec_batch {
 		this.socket_request = socket_req;
 		this.socket_response = socket_rep;
 		
+		
 		dataModel = new InternalDataModel(stagedir, TMP_MAHOUT_USERRATINGS_FILENAME);
 
 
@@ -110,6 +114,7 @@ public class ItembasedRec_batch {
 
 		System.out.println("ALGO: sending READY message");
 		socket_request.send(OUTMSG_READY, 0);
+		
 		while ( !stop ) {
 			ZMsg recvMsg = null;
 			while ( recvMsg == null ) {
@@ -122,9 +127,6 @@ public class ItembasedRec_batch {
 				System.out.println("ALGO: running READ INPUT cmd");
 				boolean success = cmdReadinput(recvMsg);
 
-				System.out.println(success ? "ALGO: input correctly read" : "ALGO: failing input read");
-				socket_request.send(success ? OUTMSG_OK : OUTMSG_KO);
-			} else if (command.streq(START_RECOMMEND_CMD)) {
 				recommender = createRecommender(stagedir + File.separator + TMP_MAHOUT_USERRATINGS_FILENAME);
 				System.out.println("ALGO: recommender created");
 
@@ -135,15 +137,22 @@ public class ItembasedRec_batch {
 				socket_request.sendMore(zeromqBindAddress);
 				socket_request.send(zeromqBindPort);
 				
-			} else if (command.streq(STOP_CMD)) {
+			
+			} else if (command.streq(RECOMMEND_CMD)) {
+				// I NEED TO WAIT THE EOF MESSAGE
+				// IN THIS IMPLEMENTATION I DON'T TAKE INTO ACCOUNT ANY STREAM/TEST DATA
+			
+				System.out.println("ALGO: received "+ RECOMMEND_CMD +" message attaching to queue and waiting for EOF");
 				
-				if(recommendationEngine != null) {
-					recommendationEngine.stop();
-				}
 				
-				socket_request.send(OUTMSG_OK);
+				k_relations.run(1, dataModel, TIMEOUT_TRAINING_RELATIONS, false);
+
+				System.out.println("ALGO: sending ack");
+			
+				socket_request.send(OUTMSG_OK, 0);
 				stop = true;
-			} else {
+			}
+			else {
 				System.out.println("ALGO: unknown command");
 			}
 
@@ -166,13 +175,11 @@ public class ItembasedRec_batch {
 			return false;
 		}
 
-		String zookeeper_url = msg.remove().toString();
-		String topic = msg.remove().toString();
-
+		zookeeper_url = msg.remove().toString();
+		topic = msg.remove().toString();
+		k_relations = new KafkaConsumer(zookeeper_url, "A", topic, 1);
 			
-		// Init relations topic
-		KafkaConsumer k_relations = new KafkaConsumer(zookeeper_url, "A", topic);
-		return k_relations.run(1, dataModel, TIMEOUT_TRAINING_RELATIONS);
+		return k_relations.run(1, dataModel, TIMEOUT_TRAINING_RELATIONS, true);
 		
 	}
 	

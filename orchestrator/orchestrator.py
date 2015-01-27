@@ -9,7 +9,6 @@ class OrchestratorState(Enum):
     reading_input = 2
     training = 3
     recommending = 4
-    finalizing = 5
 
 class bcolors:
     HEADER = '\033[95m'
@@ -120,6 +119,7 @@ class Orchestrator(object):
         log_warning("WAIT: waiting for machine to be ready")
 
         while True:
+            log_warning("WAIT: waiting for new message in state ["+ self._state.name +"]"  )
             message = self._socket.recv_multipart()
             log_info("0MQ: received message: %s " % message)
 
@@ -144,7 +144,7 @@ class Orchestrator(object):
                 log_info("DO: starting data reader for training data uri=[" + orchestrator.training_uri + "]")
 
                 cmd = [
-                    "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka_kafka_channel.conf -Didomaar.url=" + orchestrator.training_uri + " -Didomaar.sourceType=file'"]
+                    "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + orchestrator.training_uri + " -Didomaar.sourceType=file'"]
                 env_vars = os.environ
                 ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
 
@@ -166,31 +166,31 @@ class Orchestrator(object):
                     env_vars = os.environ
                     ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
 
-
                     log_warning("INFO: start sending test data to queue")
-
                     ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
                     cmd = [
-                        "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka_kafka_channel.conf -Didomaar.url=" + orchestrator.test_uri + " -Didomaar.sourceType=file'"]
+                        "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + orchestrator.test_uri + " -Didomaar.sourceType=file'"]
 
                     ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
 
                     ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
                     ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
 
-                    ## remove me, is used to test recommendation interceptor
-                    break
 
-                    msg = ['FINALIZE']
+                    msg = ['START_RECOMMEND']
                     log_warning("WAIT: sending message "+ ''.join(msg) +" and wait for response")
 
                     self._socket.send_multipart(msg)
-                    self._state = OrchestratorState.finalizing
 
-                elif self._state == OrchestratorState.finalizing:
+
+                    self._state = OrchestratorState.recommending
+
+                elif self._state == OrchestratorState.recommending:
+
+
                     log_info("INFO: recommendations correctly generated")
 
-                    # TODO HOW TO TRACK IF FLUME RECOMMENDATION MANAGER IS WAITING
+                    # TODO TRACK IF KAFKA RECOMMENDATION QUEUE IS EMPTY, OTHERWISE WAIT FOR DEQUEUE
                     log_warning("INFO: stop recommendation manager on data stream manager")
                     cmd = ["vagrant ssh -c 'sudo /vagrant/flume-config/startup/recommendation_manager-agent stop'"]
                     env_vars = os.environ
@@ -199,7 +199,7 @@ class Orchestrator(object):
 
                     ## TODO RECEIVE SOME STATISTICS FROM THE COMPUTING ENVIRONMENT
 
-                    break
+                    break  
 
             elif message[0] == 'KO':
 
@@ -218,6 +218,7 @@ class Orchestrator(object):
                     log_error("unknown error")
 
                 break
+
 
             else:
                 print ("unknown message type", message)
@@ -241,7 +242,6 @@ if __name__ == '__main__':
     import sys
 
     basedir = os.path.abspath("../")
-    algodir = os.path.join(basedir, "algorithms")
     computing_env_dir = os.path.join(basedir, "computingenvironments")
 
     orchestrator = Orchestrator()

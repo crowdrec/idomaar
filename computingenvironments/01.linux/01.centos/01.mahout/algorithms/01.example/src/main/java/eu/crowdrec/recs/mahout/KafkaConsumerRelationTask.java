@@ -11,12 +11,13 @@ import kafka.consumer.KafkaStream;
 	    private KafkaStream m_stream;
 	    private int m_threadNumber;
 	    private InternalDataModel m_dataModel;
+	    private boolean m_writeData = false;
 	 
-	    public KafkaConsumerRelationTask(KafkaStream a_stream, int a_threadNumber, InternalDataModel a_dataModel) {
+	    public KafkaConsumerRelationTask(KafkaStream a_stream, int a_threadNumber, InternalDataModel a_dataModel, boolean writeToFile) {
 	        m_threadNumber = a_threadNumber;
 	        m_stream = a_stream;
 	        m_dataModel = a_dataModel;
-	        
+	        m_writeData = writeToFile;
 	    }
 	 
 	    public void run() {
@@ -24,14 +25,18 @@ import kafka.consumer.KafkaStream;
 	    	ConsumerIterator<byte[], byte[]> it = m_stream.iterator();
 	    	boolean shutdown = false;
 	        while (!shutdown && it.hasNext() ) {
+	        	byte[] message = it.next().message();
 	        	try {
-					boolean isEof = !m_dataModel.writeRelation(it.next().message());
+	        		
+					boolean isEof = !m_dataModel.writeRelation(message, m_writeData);
 					lines++;
 					if(isEof) {
 				        System.out.println("Received EOF, readed " + lines + " messages ");
-				        
 				        shutdown = true;
+					} else {
+						System.out.println(new String(message, "UTF-8"));
 					}
+					
 					
 				} catch (NumberFormatException e) {
 					// TODO Auto-generated catch block
