@@ -23,7 +23,7 @@ public class ItembasedRec_batch {
 	private static final String OUTMSG_FINISH = "FINISH";
 
 	private static final String TRAIN_CMD = "TRAIN";
-	private static final String RECOMMEND_CMD = "START_RECOMMEND";
+	private static final String RECOMMEND_CMD = "TEST";
 
 	private static final int TIMEOUT_TRAINING_RELATIONS = 120;
 	private static final String TMP_MAHOUT_USERRATINGS_FILENAME = "mahout_ratings.csv";

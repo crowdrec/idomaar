@@ -177,7 +177,7 @@ class Orchestrator(object):
                     ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
 
 
-                    msg = ['START_RECOMMEND']
+                    msg = ['TEST']
                     log_warning("WAIT: sending message "+ ''.join(msg) +" and wait for response")
 
                     self._socket.send_multipart(msg)
