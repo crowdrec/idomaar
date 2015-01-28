@@ -23,7 +23,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", path: "vagrant/cloudera/04.flume-plugins.sh"
   config.vm.provision "shell", path: "vagrant/cloudera/05.kafka.sh"
   config.vm.provision "shell", path: "vagrant/cloudera/06.create-kafka-topic.sh"
-  config.vm.provision "shell", path: "vagrant/cloudera/07.ipython.sh"
+  # TESTING FOR EVALUATION 
+  #config.vm.provision "shell", path: "vagrant/cloudera/07.ipython.sh"
 
   # INSTALLATION WITHOUT CLOUDERA PACKAGES
   #config.vm.provision "shell", path: "vagrant/standard/03.kafka.sh"

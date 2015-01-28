@@ -17,7 +17,7 @@ FLUME_CONF_DIR=/vagrant/flume-config/log4j/recommendation-manager
 FLUME_RUN_DIR=/var/run/recommendation-manager
 FLUME_HOME=/usr/lib/flume-ng
 FLUME_USER=flume
-FLUME_CONF_FILE=/vagrant/flume-config/config/kafka_recommendations-TO-log.conf
+FLUME_CONF_FILE=/vagrant/flume-config/config/kafka_recommendations-TO-fs.conf
 
 
 FLUME_LOCK_DIR="/var/lock/subsys/"
