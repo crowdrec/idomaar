@@ -20,8 +20,7 @@ public class ItembasedRec_batch {
 	private static final String OUTMSG_READY = "READY";
 	private static final String OUTMSG_OK = "OK";
 	private static final String OUTMSG_KO = "KO";
-	private static final String OUTMSG_FINISH = "FINISH";
-
+	
 	private static final String TRAIN_CMD = "TRAIN";
 	private static final String RECOMMEND_CMD = "TEST";
 
@@ -127,15 +126,23 @@ public class ItembasedRec_batch {
 				System.out.println("ALGO: running READ INPUT cmd");
 				boolean success = cmdReadinput(recvMsg);
 
-				recommender = createRecommender(stagedir + File.separator + TMP_MAHOUT_USERRATINGS_FILENAME);
-				System.out.println("ALGO: recommender created");
+				if(success) {
+					recommender = createRecommender(stagedir + File.separator + TMP_MAHOUT_USERRATINGS_FILENAME);
+					System.out.println("ALGO: recommender created");
 
-				startRecommendationServer(recommender);
-				System.out.println("ALGO: Started recommendation engine, zeromq bind to " + getZeromqBindAddress());
+					startRecommendationServer(recommender);
+					System.out.println("ALGO: Started recommendation engine, zeromq bind to " + getZeromqBindAddress());
 
-				socket_request.sendMore(OUTMSG_OK);
-				socket_request.sendMore(zeromqBindAddress);
-				socket_request.send(zeromqBindPort);
+					socket_request.sendMore(OUTMSG_OK);
+					socket_request.sendMore(zeromqBindAddress);
+					socket_request.send(zeromqBindPort);
+					
+				} else {
+					socket_request.send(OUTMSG_KO);
+					System.out.println("ALGO: error in receiving input");
+					stop = true;
+					
+				}
 				
 			
 			} else if (command.streq(RECOMMEND_CMD)) {

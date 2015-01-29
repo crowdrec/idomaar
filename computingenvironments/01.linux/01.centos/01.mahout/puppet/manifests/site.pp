@@ -1,29 +1,29 @@
   
-    # Install base packages
+   # Install base packages
     $enhancers = [ "wget", "unzip", "git" ]
     package { $enhancers: }
 
-	 # Disable SELinux
-    class { 'selinux':
-        mode => 'disabled'
-    }
-    
-    # Disable iptables
-    class { 'firewall':
-        ensure => 'stopped'
-    }
 
-    # Install java
-    class { 'jdk_oracle':
-      version => '6',
-      platform => "x86",
-      install_dir => '/opt/'
-    } ->
-    file { '/opt/java':
-      ensure => 'link',
-      target => '/opt/java_home'
-    } ->
+  # INSTALL JAVA
+  include apt
+  apt::ppa { "ppa:webupd8team/java": }
 
+  exec { 'apt-get update':
+    command => '/usr/bin/apt-get update',
+    require => Apt::Ppa["ppa:webupd8team/java"],
+  } -> 
+  exec {
+    'set-licence-selected':
+      command => '/bin/echo debconf shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections';
+
+    'set-licence-seen':
+      command => '/bin/echo debconf shared/accepted-oracle-license-v1-1 seen true | /usr/bin/debconf-set-selections';
+  } ->
+
+  package { 'oracle-java7-installer':
+    ensure => installed
+  }
+  
   # Install Maven
   class { "maven::maven":
     version => "3.2.1", # version to install
@@ -33,7 +33,7 @@
       #username => "",
       #password => "",
     },
-    require => Class["jdk_oracle"],
+    require => Package["oracle-java7-installer"],
     before => Exec["mvn clean compile assembly:single"]
   } ->
 
@@ -50,7 +50,7 @@
     cwd        => '/vagrant/algorithms/01.example/',
     # creates => "/etc/script/itembasedrec",
     path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
-    timeout => 5
+    timeout => 60
   } ->  
 
   # Enable algo startup at boot
@@ -59,10 +59,4 @@
     ensure => running
   }
 
-  # Execute algorithm
-  #exec { "sh /mnt/algo/0mq_wrapper.sh start":
-  #  cwd        => '/mnt/algo',
-  #  path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
-  #  require => Exec["mvn clean compile assembly:single"]
-  #} 
 
