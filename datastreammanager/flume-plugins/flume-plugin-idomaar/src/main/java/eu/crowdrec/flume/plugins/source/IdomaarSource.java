@@ -126,8 +126,9 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
 				logger.error("Unable to execute import", e);
 				super.stop();
 			}
-    	
-			System.exit(1);
+
+            //On successful termination, exit with code 0
+			System.exit(0);
 			
     	}
     }
