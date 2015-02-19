@@ -2,6 +2,7 @@ import  zmq
 import  os
 from    enum import Enum
 import  subprocess
+import sys
 
 
 class OrchestratorState(Enum):
@@ -115,10 +116,9 @@ class Orchestrator(object):
 
     def _run_on_data_stream_manager(self, command):
         """
-        Run a command on the data stream manager VM. Returns the subprocess
+        Run a command on the data stream manager VM. Returns the subprocess exit code.
         """
         log_warning("INFO: starting recommendation manager on data stream manager")
-        #command = /vagrant/flume-config/startup/recommendation_manager-agent start " + recommendation_server_0mq +
         vagrant_command = ["vagrant", "ssh", "-c", "sudo " + command]
         log_info("Executing command " + ' '.join(vagrant_command))
         env_vars = os.environ
@@ -126,7 +126,7 @@ class Orchestrator(object):
         process = subprocess.Popen(vagrant_command, env=env_vars, cwd=self.datastreammanager, stdout=subprocess.PIPE, shell=True)
         while True:
             line = process.stdout.readline()
-            if line: print line.strip()
+            if line: log_info(line.strip())
             else: break
         return process.wait()
 
@@ -147,7 +147,7 @@ class Orchestrator(object):
         log_info("DO: starting data reader for training data uri=[" + str(self.training_uri) + "]")
 
         flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=' + self.training_uri + ' -Didomaar.sourceType=file'
-        self._run_on_data_stream_manager(flume_command)
+        self._exit_on_failure("flume agent", self._run_on_data_stream_manager(flume_command))
 
         ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
         ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
