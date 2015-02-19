@@ -106,6 +106,54 @@ class Orchestrator(object):
         ret = subprocess.call(cmd, cwd=self.computing_env)
         return ret
 
+    def _exit_on_failure(self, operation_name, result_code):
+        if result_code != 0:
+            log_error("Error occurred while executing {name}, result code is {code}. Exiting.".format(name=operation_name, code=result_code))
+            sys.exit(1)
+        else: log_info(operation_name + " is successful.")
+
+
+    def _run_on_data_stream_manager(self, command):
+        """
+        Run a command on the data stream manager VM. Returns the subprocess
+        """
+        log_warning("INFO: starting recommendation manager on data stream manager")
+        #command = /vagrant/flume-config/startup/recommendation_manager-agent start " + recommendation_server_0mq +
+        vagrant_command = ["vagrant", "ssh", "-c", "sudo " + command]
+        log_info("Executing command " + ' '.join(vagrant_command))
+        env_vars = os.environ
+
+        process = subprocess.Popen(vagrant_command, env=env_vars, cwd=self.datastreammanager, stdout=subprocess.PIPE, shell=True)
+        while True:
+            line = process.stdout.readline()
+            if line: print line.strip()
+            else: break
+        return process.wait()
+
+    def send_train(self):
+        """Sends a TRAIN message to the computing environment, then instructs the flume agent on the datastreammanager vm to start streaming training data"""
+        # TODO: zookeeper url has to be determined by vagrant from datastreammanager machine
+        zookeeper = "192.168.22.5:2181"
+
+        # Pass to the orchestrator the zookeeper address and the name of the topics
+        # THE FORMAT IS
+        # MESSAGE, ZOOKEEPER URL, ENTITIES TOPIC, RELATIONS TOPIC
+        msg = ['TRAIN', zookeeper, "data"]
+        log_warning("WAIT: sending message ["+ ', '.join(msg) +"] and wait for response")
+
+        self._socket.send_multipart(msg)
+
+        # start log4j agent on datastreammanager to read training data
+        log_info("DO: starting data reader for training data uri=[" + str(self.training_uri) + "]")
+
+        flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=' + self.training_uri + ' -Didomaar.sourceType=file'
+        self._run_on_data_stream_manager(flume_command)
+
+        ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
+        ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
+
+        self._state = OrchestratorState.reading_input
+
 
     def run(self):
         if self.training_uri is None:
@@ -125,33 +173,8 @@ class Orchestrator(object):
 
             if message[0] == 'READY':
                 log_info("INFO: machine started")
-
                 # Tell the computing environment to start reading training data from the kafka queue
-                # Pass to the orchestrator the zookeeper address and the name of the topics
-
-
-                # TODO: zookeeper url has to be determined by vagrant from datastreammanager machine
-                zookeeper = "192.168.22.5:2181"
-
-                # THE FORMAT IS
-                # MESSAGE, ZOOKEEPER URL, ENTITIES TOPIC, RELATIONS TOPIC
-                msg = ['TRAIN', zookeeper, "data"]
-                log_warning("WAIT: sending message "+ ''.join(msg) +" and wait for response")
-
-                self._socket.send_multipart(msg)
-
-                # start log4j agent on datastreammanager to read training data
-                log_info("DO: starting data reader for training data uri=[" + orchestrator.training_uri + "]")
-
-                cmd = [
-                    "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + orchestrator.training_uri + " -Didomaar.sourceType=file'"]
-                env_vars = os.environ
-                ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
-
-                ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
-                ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
-
-                self._state = OrchestratorState.reading_input
+                self.send_train()
 
             elif message[0] == 'OK':
                 if self._state == OrchestratorState.reading_input:
@@ -181,8 +204,6 @@ class Orchestrator(object):
                     log_warning("WAIT: sending message "+ ''.join(msg) +" and wait for response")
 
                     self._socket.send_multipart(msg)
-
-
                     self._state = OrchestratorState.recommending
 
                 elif self._state == OrchestratorState.recommending:
@@ -241,7 +262,7 @@ class Orchestrator(object):
 if __name__ == '__main__':
     import sys
 
-    basedir = os.path.abspath("../")
+    basedir = os.path.abspath("../../")
     computing_env_dir = os.path.join(basedir, "computingenvironments")
 
     orchestrator = Orchestrator()
