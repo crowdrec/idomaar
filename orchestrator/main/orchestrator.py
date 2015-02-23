@@ -107,20 +107,13 @@ class Orchestrator(object):
         ret = subprocess.call(cmd, cwd=self.computing_env)
         return ret
 
-    def _exit_on_failure(self, operation_name, result_code):
-        if result_code != 0:
-            log_error("Error occurred while executing {name}, result code is {code}. Exiting.".format(name=operation_name, code=result_code))
-            sys.exit(1)
-        else: log_info(operation_name + " is successful.")
-
-
-    def _run_on_data_stream_manager(self, command):
+    def run_on_data_stream_manager(self, command, exit_on_failure = True):
         """
         Run a command on the data stream manager VM. Returns the subprocess exit code.
         """
-        log_warning("INFO: starting recommendation manager on data stream manager")
         vagrant_command = ["vagrant", "ssh", "-c", "sudo " + command]
-        log_info("Executing command " + ' '.join(vagrant_command))
+        vagrant_command_string = ' '.join(vagrant_command)
+        log_info("On data stream manager, executing command " + vagrant_command_string)
         env_vars = os.environ
 
         process = subprocess.Popen(vagrant_command, env=env_vars, cwd=self.datastreammanager, stdout=subprocess.PIPE, shell=True)
@@ -128,7 +121,14 @@ class Orchestrator(object):
             line = process.stdout.readline()
             if line: log_info(line.strip())
             else: break
-        return process.wait()
+        exit_code = process.wait()
+        if not exit_on_failure: return exit_code
+        if exit_code != 0:
+            log_error("Error occurred while executing {name}, exit code is {code}. Exiting.".format(name=vagrant_command_string, code=exit_code))
+            sys.exit(1)
+        else: log_info("Command " + vagrant_command_string + " is successful.")
+
+
 
     def send_train(self):
         """Sends a TRAIN message to the computing environment, then instructs the flume agent on the datastreammanager vm to start streaming training data"""
@@ -147,7 +147,7 @@ class Orchestrator(object):
         log_info("DO: starting data reader for training data uri=[" + str(self.training_uri) + "]")
 
         flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=' + self.training_uri + ' -Didomaar.sourceType=file'
-        self._exit_on_failure("flume agent", self._run_on_data_stream_manager(flume_command))
+        self.run_on_data_stream_manager(flume_command)
 
         ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
         ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
@@ -184,17 +184,19 @@ class Orchestrator(object):
                     # TODO RECOMMENDATION HOSTNAME MUST BE EXTRACTED FROM MESSAGES
                     recommendation_server_0mq = '192.168.22.100:5560'
 
-                    log_warning("INFO: starting recommendation manager on data stream manager")
-                    cmd = ["vagrant ssh -c 'sudo /vagrant/flume-config/startup/recommendation_manager-agent start " + recommendation_server_0mq +"'"]
-                    env_vars = os.environ
-                    ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
+                    # log_warning("INFO: starting recommendation manager on data stream manager")
+                    # cmd = ["vagrant ssh -c 'sudo /vagrant/flume-config/startup/recommendation_manager-agent start " + recommendation_server_0mq +"'"]
+                    # env_vars = os.environ
+                    # ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
 
-                    log_warning("INFO: start sending test data to queue")
+                    recommendation_manager_start = "/vagrant/flume-config/startup/recommendation_manager-agent start " + recommendation_server_0mq
+                    self.run_on_data_stream_manager(recommendation_manager_start)
+
                     ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
-                    cmd = [
-                        "vagrant ssh -c 'sudo flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + orchestrator.test_uri + " -Didomaar.sourceType=file'"]
+                    log_warning("INFO: start sending test data to queue")
 
-                    ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
+                    test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + orchestrator.test_uri + " -Didomaar.sourceType=file"
+                    self.run_on_data_stream_manager(test_data_feed_command)
 
                     ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
                     ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
@@ -213,10 +215,9 @@ class Orchestrator(object):
 
                     # TODO TRACK IF KAFKA RECOMMENDATION QUEUE IS EMPTY, OTHERWISE WAIT FOR DEQUEUE
                     log_warning("INFO: stop recommendation manager on data stream manager")
-                    cmd = ["vagrant ssh -c 'sudo /vagrant/flume-config/startup/recommendation_manager-agent stop'"]
-                    env_vars = os.environ
-                    ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
 
+                    recommendation_manager_stop = "/vagrant/flume-config/startup/recommendation_manager-agent stop"
+                    self.run_on_data_stream_manager(recommendation_manager_stop)
 
                     ## TODO RECEIVE SOME STATISTICS FROM THE COMPUTING ENVIRONMENT
 
@@ -250,10 +251,9 @@ class Orchestrator(object):
         self._socket.send_multipart(msg)
 
         log_warning("INFO: stopping recommendation manager on data stream manager")
-        cmd = ["vagrant ssh -c 'sudo /vagrant/flume-config/startup/recommendation_manager-agent stop'"]
-        env_vars = os.environ
-        ret = subprocess.call(cmd, env=env_vars, cwd=self.datastreammanager, shell=True)
 
+        recommendation_manager_stop = "/vagrant/flume-config/startup/recommendation_manager-agent stop"
+        self.run_on_data_stream_manager(recommendation_manager_stop)
 
         self._socket.close()
         self._context.term()
