@@ -166,7 +166,6 @@ class Orchestrator(object):
                     ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
                     ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
 
-
                     msg = ['TEST']
                     logger.warn("WAIT: sending message "+ ''.join(msg) +" and wait for response")
 
@@ -174,8 +173,6 @@ class Orchestrator(object):
                     self._state = OrchestratorState.recommending
 
                 elif self._state == OrchestratorState.recommending:
-
-
                     logger.info("INFO: recommendations correctly generated")
 
                     # TODO TRACK IF KAFKA RECOMMENDATION QUEUE IS EMPTY, OTHERWISE WAIT FOR DEQUEUE
@@ -211,7 +208,7 @@ class Orchestrator(object):
                 print ("unknown message type", message)
                 continue
 
-        print ("DO: stop")
+        logger.info("DO: stop")
         msg = ['STOP']
         self._socket.send_multipart(msg)
 

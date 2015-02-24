@@ -67,6 +67,7 @@ public Event intercept(Event event) {
     	    	logger.error("Received wrong data format for event ["+body+"]");
     	    } else {
         	    requester.sendMore("RECOMMEND");
+                logger.info("Sending " + parsedRequest[3] + " to recommendation engine.");
                 requester.sendMore(parsedRequest[3]);
                 requester.send(parsedRequest[4], ZMQ.NOBLOCK);
                 

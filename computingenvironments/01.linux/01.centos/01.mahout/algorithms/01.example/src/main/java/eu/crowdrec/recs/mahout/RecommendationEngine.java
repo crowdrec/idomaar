@@ -80,8 +80,11 @@ public class RecommendationEngine implements Runnable {
 	linked_entities    [{"id":"movie:2001","rating":3.8,"rank":3}, {"id":"movie:2002","rating":4.3,"rank":1}, {"id":"movie:2003","rating":4,"rank":2,"explanation":{"reason":"you like","entity":"movie:2004"}}]
 */
 protected ZMsg cmdRecommend(ZMsg msg) throws Exception {
-	
-	JsonReader reader = Json.createReader(new StringReader(msg.remove().toString()));
+
+	String jsonString = msg.remove().toString();
+	System.err.println("Received recommendation request json " + jsonString);
+
+	JsonReader reader = Json.createReader(new StringReader(jsonString));
 	JsonObject properties = reader.readObject();
 	
 	JsonReader reader_rel = Json.createReader(new StringReader(msg.remove().toString()));

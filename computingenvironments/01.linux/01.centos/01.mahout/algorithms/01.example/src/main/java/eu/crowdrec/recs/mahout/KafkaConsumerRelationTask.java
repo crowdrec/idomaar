@@ -31,7 +31,7 @@ import kafka.consumer.KafkaStream;
 					boolean isEof = !m_dataModel.writeRelation(message, m_writeData);
 					lines++;
 					if(isEof) {
-				        System.out.println("Received EOF, readed " + lines + " messages ");
+				        System.out.println("Received EOF, read " + lines + " messages ");
 				        shutdown = true;
 					} else {
 						System.out.println(new String(message, "UTF-8"));
