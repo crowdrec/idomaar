@@ -23,6 +23,10 @@ class Orchestrator(object):
         self._socket.bind("tcp://*:%s" % port)
         self._state = OrchestratorState.ready
 
+        self.reco_manager_connection_port = 2761
+        self.reco_manager_socket = zmq.Context().socket(zmq.REP)
+        self.reco_manager_socket.bind('tcp://*:%s' % self.reco_manager_connection_port)
+
         self._training_uri = None
         self._test_uri = None
         self._computing_env = None
@@ -154,7 +158,7 @@ class Orchestrator(object):
                     # TODO RECOMMENDATION HOSTNAME MUST BE EXTRACTED FROM MESSAGES
                     recommendation_server_0mq = '192.168.22.100:5560'
 
-                    recommendation_manager_start = "/vagrant/flume-config/startup/recommendation_manager-agent start " + recommendation_server_0mq
+                    recommendation_manager_start = "/vagrant/flume-config/startup/recommendation_manager-agent start " + recommendation_server_0mq + " " + str(self.reco_manager_connection_port)
                     self.run_on_data_stream_manager(recommendation_manager_start)
 
                     ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
@@ -176,14 +180,16 @@ class Orchestrator(object):
                     logger.info("INFO: recommendations correctly generated")
 
                     # TODO TRACK IF KAFKA RECOMMENDATION QUEUE IS EMPTY, OTHERWISE WAIT FOR DEQUEUE
-                    logger.warning("INFO: stop recommendation manager on data stream manager")
-
-                    recommendation_manager_stop = "/vagrant/flume-config/startup/recommendation_manager-agent stop"
-                    self.run_on_data_stream_manager(recommendation_manager_stop)
+                    reco_manager_message = self.reco_manager_socket.recv_multipart()
+                    logger.info("Message from recommendation manager: %s " % reco_manager_message)
+                    if reco_manager_message[0] == "FINISHED":
+                        logger.info("Recommendation manager has finished processing recommendation queue, shutting it down and then exiting.")
+                        recommendation_manager_stop = "/vagrant/flume-config/startup/recommendation_manager-agent stop"
+                        self.run_on_data_stream_manager(recommendation_manager_stop)
+                        break
 
                     ## TODO RECEIVE SOME STATISTICS FROM THE COMPUTING ENVIRONMENT
 
-                    break  
 
             elif message[0] == 'KO':
 

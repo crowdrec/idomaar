@@ -16,25 +16,31 @@ import org.apache.flume.interceptor.Interceptor;
 
 public class IdomaarRecommendationInterceptor implements Interceptor {
 
-	private Socket requester;
-	private String _hostname;
-	private org.zeromq.ZMQ.Context zmqContext;
 	private static final Logger logger = LoggerFactory.getLogger(eu.crowdrec.flume.plugins.interceptor.IdomaarRecommendationInterceptor.class);
+
+	private Socket requester;
+	private Socket orchestratorConnection;
+
+	private String _hostname;
+	private String orchestratorHostname;
+	private org.zeromq.ZMQ.Context zmqContext;
 
 	private static String fieldSeparator = "\\t";
 
-	public IdomaarRecommendationInterceptor(String hostname){
-
+	public IdomaarRecommendationInterceptor(String hostname, String orchestratorHostname){
 		_hostname = hostname;
+		this.orchestratorHostname = orchestratorHostname;
 		zmqContext = ZMQ.context(1);
 		requester = zmqContext.socket(ZMQ.REQ);
-
+		orchestratorConnection = ZMQ.context(1).socket(ZMQ.REQ);
 	}
 
 	@Override
 	public void initialize() {
 		requester.connect(_hostname);
 		logger.info("Launched 0MQ client, bind to " + _hostname);
+		orchestratorConnection.connect(orchestratorHostname);
+		logger.info("Launched 0MQ client to connect to orchestrator, bind to " + orchestratorHostname);
 	}
 
 	@Override
@@ -50,6 +56,7 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 			String[] parsedRequest = parseRequest(body);
 			if(parsedRequest[0].equals("EOF")) {
 				logger.info("Received end of recommendation file");
+				orchestratorConnection.send("FINISHED");
 			} else {
 				logger.info("Requesting recommendation for event ["+body+"]");
 				if(parsedRequest.length < 5) {
@@ -99,29 +106,30 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	public void close() {
 		//  We never get here but clean up anyhow
 		requester.close();
+		orchestratorConnection.close();
 		zmqContext.term();
 	}
 
 	public static class Builder implements Interceptor.Builder {
 		private String hostname;
+		private String orchestratorHostname;
 
 		@Override
 		public Interceptor build() {
-			return new IdomaarRecommendationInterceptor(hostname);
+			return new IdomaarRecommendationInterceptor(hostname, orchestratorHostname);
+		}
+
+		private String retrieveProperty(Context context, String systemPropertyName, String contextPropertyName) {
+			String systemProperty = System.getProperty(systemPropertyName);
+			if (systemProperty != null) return systemProperty;
+			return context.getString(contextPropertyName);
 		}
 
 		@Override
 		public void configure(Context ctx) {
-			// Retrieve property from flume conf
-
-			if(System.getProperty("idomaar.recommendation.hostname") != null) {
-				this.hostname = System.getProperty("idomaar.recommendation.hostname");
-			} else {
-				this.hostname = ctx.getString("zeromqSocket");
-			}
-
+			this.hostname = retrieveProperty(ctx, "idomaar.recommendation.hostname", "zeromqSocket");
+			this.orchestratorHostname = retrieveProperty(ctx, "idomaar.orchestrator.hostname", "orchestratorZeromqSocket");
 		}
 	}
 
 }
-

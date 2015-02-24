@@ -11,6 +11,10 @@ STATUS_NOT_RUNNING=3
 ERROR_PROGRAM_NOT_INSTALLED=5
 
 IDOMAAR_RECOMMENDATION=$2
+ORCHESTRATOR_CONNECTION_PORT=$3
+
+ORCHESTRATOR_IP=`netstat -rn | grep "^0.0.0.0 " | cut -d " " -f10`
+ORCHESTRATOR_CONNECTION=$ORCHESTRATOR_IP:$ORCHESTRATOR_CONNECTION_PORT
 
 FLUME_LOG_DIR=/var/log/flume-ng/
 FLUME_CONF_DIR=/vagrant/flume-config/log4j/recommendation-manager
@@ -48,7 +52,7 @@ start() {
   fi
 
   log_success_msg "Starting $desc (flume-ng-agent): "
-  /bin/su -s /bin/bash -c "/bin/bash -c 'echo \$\$ >${FLUME_PID_FILE} && exec ${EXEC_PATH} agent --conf $FLUME_CONF_DIR --conf-file $FLUME_CONF_FILE --name $FLUME_AGENT_NAME -Didomaar.recommendation.hostname=tcp://$IDOMAAR_RECOMMENDATION >>${FLUME_LOG_DIR}/recommendation-manager.init.log 2>&1' &" $FLUME_USER
+  /bin/su -s /bin/bash -c "/bin/bash -c 'echo \$\$ >${FLUME_PID_FILE} && exec ${EXEC_PATH} agent --conf $FLUME_CONF_DIR --conf-file $FLUME_CONF_FILE --name $FLUME_AGENT_NAME -Didomaar.recommendation.hostname=tcp://$IDOMAAR_RECOMMENDATION -Didomaar.orchestrator.hostname=tcp://$ORCHESTRATOR_CONNECTION >>${FLUME_LOG_DIR}/recommendation-manager.init.log 2>&1' &" $FLUME_USER
   RETVAL=$?
   [ $RETVAL -eq 0 ] && touch $LOCKFILE
   return $RETVAL
