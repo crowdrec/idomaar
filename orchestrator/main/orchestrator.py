@@ -29,7 +29,9 @@ class Orchestrator(object):
         self.reco_manager_socket.bind('tcp://*:%s' % self.executor.orchestrator_port)
 
         # TODO Number of (concurrently running) recommendation managers should be configured externally, see issue #40
-        self.reco_managers_by_name = self.create_recommendation_managers(3)
+        self.num_concurrent_recommendation_managers = 10
+
+        self.reco_managers_by_name = self.create_recommendation_managers(self.num_concurrent_recommendation_managers)
 
         self._training_uri = None
         self._test_uri = None
@@ -104,6 +106,7 @@ class Orchestrator(object):
 
     def prepare(self):
         self.executor.start_datastream()
+        self.executor.configure_datastream(self.num_concurrent_recommendation_managers)
         self.start_vm()
 
     def run(self):
