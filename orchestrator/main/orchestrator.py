@@ -29,7 +29,7 @@ class Orchestrator(object):
         self.reco_manager_socket.bind('tcp://*:%s' % self.executor.orchestrator_port)
 
         # TODO Number of (concurrently running) recommendation managers should be configured externally, see issue #40
-        self.reco_managers_by_name = self.create_recommendation_managers(1)
+        self.reco_managers_by_name = self.create_recommendation_managers(3)
 
         self._training_uri = None
         self._test_uri = None
@@ -159,21 +159,17 @@ class Orchestrator(object):
                 elif self._state == OrchestratorState.recommending:
                     logger.info("INFO: recommendations correctly generated, waiting for finished message from recommendation manager agents")
 
-                    # TODO TRACK IF KAFKA RECOMMENDATION QUEUE IS EMPTY, OTHERWISE WAIT FOR DEQUEUE
                     reco_manager_message = self.reco_manager_socket.recv_multipart()
                     logger.info("Message from recommendation manager: %s " % reco_manager_message)
                     if reco_manager_message[0] == "FINISHED":
                         reco_manager_name = reco_manager_message[1] if len(reco_manager_message) > 1 else ""
                         reco_manager = self.reco_managers_by_name.get(reco_manager_name)
                         if reco_manager is not None:
-                            logger.info("Recommendation manager " + reco_manager_name + "has finished processing recommendation queue, shutting it down.")
-                            reco_manager.stop()
-                            del self.reco_managers_by_name[reco_manager_name]
+                            logger.info("Recommendation manager " + reco_manager_name + "has finished processing recommendation queue, shutting all managers down.")
+                            for manager in self.reco_managers_by_name.itervalues(): reco_manager.stop()
+                            break
                         else:
                             logger.error("Received FINISHED message from a recommendation manager named " + reco_manager_name + " but no record of this manager is found.")
-                        if not self.reco_managers_by_name:
-                            logger.info("No more recommendation managers running, shutting down.")
-                            break
 
                     ## TODO RECEIVE SOME STATISTICS FROM THE COMPUTING ENVIRONMENT
 
@@ -204,11 +200,6 @@ class Orchestrator(object):
         logger.info("DO: stop")
         msg = ['STOP']
         self._socket.send_multipart(msg)
-
-        logger.warning("INFO: stopping recommendation manager on data stream manager")
-
-        recommendation_manager_stop = "/vagrant/flume-config/startup/recommendation_manager-agent stop"
-        self.executor.run_on_data_stream_manager(recommendation_manager_stop)
 
         self._socket.close()
         self._context.term()

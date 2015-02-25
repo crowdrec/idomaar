@@ -33,13 +33,12 @@ class VagrantExecutor:
     def start_recommendation_manager(self, name):
         """:param name: The name of the recommendation manager agent"""
         logger.info("Starting recommendation manager " + name)
-        recommendation_manager_start = "/vagrant/flume-config/startup/recommendation_manager-agent start " + self.reco_engine_hostport + " " + \
-                                       str(self.orchestrator_port) + " " + name
+        recommendation_manager_start = "/vagrant/flume-config/startup/recommendation_manager-agent start " + name + " " + self.reco_engine_hostport + " " + str(self.orchestrator_port)
         self.run_on_data_stream_manager(recommendation_manager_start)
 
     def stop_recommendation_manager(self, name):
         logger.info("Stopping recommendation manager " + name)
-        recommendation_manager_stop = "/vagrant/flume-config/startup/recommendation_manager-agent stop"
+        recommendation_manager_stop = "/vagrant/flume-config/startup/recommendation_manager-agent stop " + name
         self.run_on_data_stream_manager(recommendation_manager_stop)
 
     def execute(self, command, working_dir, subprocess_logger, exit_on_failure=True):
