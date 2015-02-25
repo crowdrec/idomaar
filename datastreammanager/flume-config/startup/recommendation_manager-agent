@@ -12,6 +12,7 @@ ERROR_PROGRAM_NOT_INSTALLED=5
 
 IDOMAAR_RECOMMENDATION=$2
 ORCHESTRATOR_CONNECTION_PORT=$3
+RECOMMENDATION_MANAGER_AGENT_NAME=$4
 
 ORCHESTRATOR_IP=`netstat -rn | grep "^0.0.0.0 " | cut -d " " -f10`
 ORCHESTRATOR_CONNECTION=$ORCHESTRATOR_IP:$ORCHESTRATOR_CONNECTION_PORT
@@ -29,7 +30,7 @@ LOCKFILE="${FLUME_LOCK_DIR}/recommendation-manager"
 desc="Recommendation manager agent daemon"
 
 EXEC_PATH=/usr/bin/flume-ng
-FLUME_PID_FILE=${FLUME_RUN_DIR}/recommendation-manager.pid
+FLUME_PID_FILE=${FLUME_RUN_DIR}/recommendation-manager-$RECOMMENDATION_MANAGER_AGENT_NAME.pid
 
 # These directories may be tmpfs and may or may not exist
 # depending on the OS (ex: /var/lock/subsys does not exist on debian/ubuntu)
@@ -52,7 +53,7 @@ start() {
   fi
 
   log_success_msg "Starting $desc (flume-ng-agent): "
-  /bin/su -s /bin/bash -c "/bin/bash -c 'echo \$\$ >${FLUME_PID_FILE} && exec ${EXEC_PATH} agent --conf $FLUME_CONF_DIR --conf-file $FLUME_CONF_FILE --name $FLUME_AGENT_NAME -Didomaar.recommendation.hostname=tcp://$IDOMAAR_RECOMMENDATION -Didomaar.orchestrator.hostname=tcp://$ORCHESTRATOR_CONNECTION >>${FLUME_LOG_DIR}/recommendation-manager.init.log 2>&1' &" $FLUME_USER
+  /bin/su -s /bin/bash -c "/bin/bash -c 'echo \$\$ >${FLUME_PID_FILE} && exec ${EXEC_PATH} agent --conf $FLUME_CONF_DIR --conf-file $FLUME_CONF_FILE --name $FLUME_AGENT_NAME -Didomaar.recommendation.hostname=tcp://$IDOMAAR_RECOMMENDATION -Didomaar.orchestrator.hostname=tcp://$ORCHESTRATOR_CONNECTION -Didomaar.recommendation.manager.name=$RECOMMENDATION_MANAGER_AGENT_NAME >>${FLUME_LOG_DIR}/recommendation-manager.init.log 2>&1' &" $FLUME_USER
   RETVAL=$?
   [ $RETVAL -eq 0 ] && touch $LOCKFILE
   return $RETVAL

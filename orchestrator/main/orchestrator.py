@@ -5,9 +5,10 @@ import  subprocess
 import sys
 import logging
 import colorlog
+from recommendation_manager import RecommendationManager
+from vagrant_executor import VagrantExecutor
 
 logger = logging.getLogger("orchestrator")
-datastream_logger = logging.getLogger("datastream")
 computing_environment_logger = logging.getLogger("computing_environment")
 
 class OrchestratorState(Enum):
@@ -17,20 +18,26 @@ class OrchestratorState(Enum):
     recommending = 4
 
 class Orchestrator(object):
-    def __init__(self, port=2760):
+    def __init__(self, executor, port=2760):
         self._context = zmq.Context()
+        self.executor = executor
         self._socket = self._context.socket(zmq.REP)
         self._socket.bind("tcp://*:%s" % port)
         self._state = OrchestratorState.ready
 
-        self.reco_manager_connection_port = 2761
         self.reco_manager_socket = zmq.Context().socket(zmq.REP)
-        self.reco_manager_socket.bind('tcp://*:%s' % self.reco_manager_connection_port)
+        self.reco_manager_socket.bind('tcp://*:%s' % self.executor.orchestrator_port)
+
+        # TODO Number of (concurrently running) recommendation managers should be configured externally, see issue #40
+        self.reco_managers_by_name = self.create_recommendation_managers(1)
 
         self._training_uri = None
         self._test_uri = None
         self._computing_env = None
         self._algorithm = None
+
+    def create_recommendation_managers(self, count):
+        return {"RM" + str(i): RecommendationManager("RM" + str(i), self.executor) for i in range(count)}
 
     @property
     def training_uri(self):
@@ -64,45 +71,12 @@ class Orchestrator(object):
     def algorithm(self, value):
         self._algorithm = value
 
-    def start_datastream(self):
-        logger.info("DO: starting data stream")
-        return self.execute_vagrant_command(command=['vagrant', 'up'], working_dir=self.datastreammanager, subprocess_logger=datastream_logger)
-
     def start_vm(self):
         if self.computing_env is None:
             logger.error("computing env not set!")
             return
         logger.info("DO: starting Computing environment")
-        return self.execute_vagrant_command(command=['vagrant', 'up'], working_dir=self.computing_env, subprocess_logger=computing_environment_logger)
-
-    def stop_vm(self):
-        logger.info("DO: Stopping computing environment")
-        return self.execute_vagrant_command(command=['vagrant', 'halt'], working_dir=self.computing_env, subprocess_logger=computing_environment_logger)
-
-    def execute_vagrant_command(self, command, working_dir, subprocess_logger, exit_on_failure=True):
-        vagrant_command_string = ' '.join(command)
-        process = subprocess.Popen(command, env=os.environ, cwd=working_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
-        while True:
-            line = process.stdout.readline()
-            if line: subprocess_logger.info(line.strip())
-            else: break
-        exit_code = process.wait()
-        if not exit_on_failure: return exit_code
-        if exit_code != 0:
-            logger.error("Error occurred while executing {name} in directory {working_dir}, exit code is {code}. Exiting.".format(name=vagrant_command_string, working_dir=working_dir, code=exit_code))
-            sys.exit(1)
-        else: logger.info("Command '" + vagrant_command_string + "' is successful.")
-        return exit_code
-
-
-    def run_on_data_stream_manager(self, command, exit_on_failure = True):
-        """
-        Run a command on the data stream manager VM. Returns the subprocess exit code.
-        """
-        vagrant_command = ["vagrant", "ssh", "-c", "sudo " + command]
-        vagrant_command_string = ' '.join(vagrant_command)
-        logger.info("On data stream manager, executing command " + vagrant_command_string)
-        self.execute_vagrant_command(command=vagrant_command, working_dir=self.datastreammanager, subprocess_logger=datastream_logger, exit_on_failure=exit_on_failure)
+        return self.executor.start(working_dir=self.computing_env, subprocess_logger=computing_environment_logger)
 
     def send_train(self):
         """Sends a TRAIN message to the computing environment, then instructs the flume agent on the datastreammanager vm to start streaming training data"""
@@ -121,13 +95,16 @@ class Orchestrator(object):
         logger.info("DO: starting data reader for training data uri=[" + str(self.training_uri) + "]")
 
         flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=' + self.training_uri + ' -Didomaar.sourceType=file'
-        self.run_on_data_stream_manager(flume_command)
+        self.executor.run_on_data_stream_manager(flume_command)
 
         ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
         ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
 
         self._state = OrchestratorState.reading_input
 
+    def prepare(self):
+        self.executor.start_datastream()
+        self.start_vm()
 
     def run(self):
         if self.training_uri is None:
@@ -155,17 +132,20 @@ class Orchestrator(object):
                     logger.info("INFO: recommender correctly trained")
 
                     # TODO DESTINATION FILE MUST BE PASSED FROM COMMAND LINE
-                    # TODO RECOMMENDATION HOSTNAME MUST BE EXTRACTED FROM MESSAGES
-                    recommendation_server_0mq = '192.168.22.100:5560'
 
-                    recommendation_manager_start = "/vagrant/flume-config/startup/recommendation_manager-agent start " + recommendation_server_0mq + " " + str(self.reco_manager_connection_port)
-                    self.run_on_data_stream_manager(recommendation_manager_start)
+
+                    for reco_manager in self.reco_managers_by_name.itervalues():
+                        reco_manager.start()
+
+                    # recommendation_server_0mq = '192.168.22.100:5560'
+                    # recommendation_manager_start = "/vagrant/flume-config/startup/recommendation_manager-agent start " + recommendation_server_0mq + " " + str(self.reco_manager_connection_port)
+                    # self.executor.run_on_data_stream_manager(recommendation_manager_start)
 
                     ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
                     logger.info("Start sending test data to queue")
 
                     test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + orchestrator.test_uri + " -Didomaar.sourceType=file"
-                    self.run_on_data_stream_manager(test_data_feed_command)
+                    self.executor.run_on_data_stream_manager(test_data_feed_command)
 
                     ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
                     ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
@@ -177,16 +157,23 @@ class Orchestrator(object):
                     self._state = OrchestratorState.recommending
 
                 elif self._state == OrchestratorState.recommending:
-                    logger.info("INFO: recommendations correctly generated")
+                    logger.info("INFO: recommendations correctly generated, waiting for finished message from recommendation manager agents")
 
                     # TODO TRACK IF KAFKA RECOMMENDATION QUEUE IS EMPTY, OTHERWISE WAIT FOR DEQUEUE
                     reco_manager_message = self.reco_manager_socket.recv_multipart()
                     logger.info("Message from recommendation manager: %s " % reco_manager_message)
                     if reco_manager_message[0] == "FINISHED":
-                        logger.info("Recommendation manager has finished processing recommendation queue, shutting it down and then exiting.")
-                        recommendation_manager_stop = "/vagrant/flume-config/startup/recommendation_manager-agent stop"
-                        self.run_on_data_stream_manager(recommendation_manager_stop)
-                        break
+                        reco_manager_name = reco_manager_message[1] if len(reco_manager_message) > 1 else ""
+                        reco_manager = self.reco_managers_by_name.get(reco_manager_name)
+                        if reco_manager is not None:
+                            logger.info("Recommendation manager " + reco_manager_name + "has finished processing recommendation queue, shutting it down.")
+                            reco_manager.stop()
+                            del self.reco_managers_by_name[reco_manager_name]
+                        else:
+                            logger.error("Received FINISHED message from a recommendation manager named " + reco_manager_name + " but no record of this manager is found.")
+                        if not self.reco_managers_by_name:
+                            logger.info("No more recommendation managers running, shutting down.")
+                            break
 
                     ## TODO RECEIVE SOME STATISTICS FROM THE COMPUTING ENVIRONMENT
 
@@ -211,7 +198,7 @@ class Orchestrator(object):
 
 
             else:
-                print ("unknown message type", message)
+                logger.error("Unknown message type " + str(message))
                 continue
 
         logger.info("DO: stop")
@@ -221,7 +208,7 @@ class Orchestrator(object):
         logger.warning("INFO: stopping recommendation manager on data stream manager")
 
         recommendation_manager_stop = "/vagrant/flume-config/startup/recommendation_manager-agent stop"
-        self.run_on_data_stream_manager(recommendation_manager_stop)
+        self.executor.run_on_data_stream_manager(recommendation_manager_stop)
 
         self._socket.close()
         self._context.term()
@@ -254,11 +241,14 @@ if __name__ == '__main__':
     root_logger = logging.getLogger()
     setup_logging(root_logger)
 
-
     basedir = os.path.abspath("../../")
     computing_env_dir = os.path.join(basedir, "computingenvironments")
 
-    orchestrator = Orchestrator()
+    # TODO RECOMMENDATION HOSTNAME MUST BE EXTRACTED FROM MESSAGES
+    vagrant_executor = VagrantExecutor(reco_engine_hostport='192.168.22.100:5560', orchestrator_port=2761,
+                                       datastream_manager_working_dir=os.path.join(basedir, "datastreammanager"))
+
+    orchestrator = Orchestrator(executor=vagrant_executor)
     orchestrator.training_uri = sys.argv[2]
     orchestrator.test_uri = sys.argv[3]
     orchestrator.computing_env = os.path.join(computing_env_dir, sys.argv[1])
@@ -269,17 +259,13 @@ if __name__ == '__main__':
     logger.info("Test data URI: %s" % orchestrator.test_uri)
     logger.info("Computing environment path: %s" % orchestrator.computing_env)
 
-    orchestrator.start_datastream()
-
-    # TODO: create/check data for validation
-
-    orchestrator.start_vm()
-
+    orchestrator.prepare()
     orchestrator.run()
 
     # TODO: check if data stream channel is empty (http metrics)
     # TODO: test/evaluate the output
 
-    # orchestrator.stop_vm()
+    #logger.info("DO: Stopping computing environment")
+    #orchestrator.executor.stop(working_dir=orchestrator.computing_env, subprocess_logger=computing_environment_logger)
 
     logger.info("Finished.")

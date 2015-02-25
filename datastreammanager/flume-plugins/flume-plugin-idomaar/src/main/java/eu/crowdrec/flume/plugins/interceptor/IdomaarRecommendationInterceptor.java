@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeromq.ZMQ;
@@ -21,15 +22,17 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	private Socket requester;
 	private Socket orchestratorConnection;
 
-	private String _hostname;
-	private String orchestratorHostname;
-	private org.zeromq.ZMQ.Context zmqContext;
+	private final String _hostname;
+	private final String orchestratorHostname;
+	private final org.zeromq.ZMQ.Context zmqContext;
+	private final String recommendationAgentName;
 
 	private static String fieldSeparator = "\\t";
 
-	public IdomaarRecommendationInterceptor(String hostname, String orchestratorHostname){
+	public IdomaarRecommendationInterceptor(String hostname, String orchestratorHostname, String recommendationAgentName) {
 		_hostname = hostname;
 		this.orchestratorHostname = orchestratorHostname;
+		this.recommendationAgentName = recommendationAgentName;
 		zmqContext = ZMQ.context(1);
 		requester = zmqContext.socket(ZMQ.REQ);
 		orchestratorConnection = ZMQ.context(1).socket(ZMQ.REQ);
@@ -56,7 +59,8 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 			String[] parsedRequest = parseRequest(body);
 			if(parsedRequest[0].equals("EOF")) {
 				logger.info("Received end of recommendation file");
-				orchestratorConnection.send("FINISHED");
+				orchestratorConnection.sendMore("FINISHED");
+				orchestratorConnection.send(recommendationAgentName, ZMQ.NOBLOCK);
 			} else {
 				logger.info("Requesting recommendation for event ["+body+"]");
 				if(parsedRequest.length < 5) {
@@ -113,10 +117,11 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	public static class Builder implements Interceptor.Builder {
 		private String hostname;
 		private String orchestratorHostname;
+		private String recommendationManagerName;
 
 		@Override
 		public Interceptor build() {
-			return new IdomaarRecommendationInterceptor(hostname, orchestratorHostname);
+			return new IdomaarRecommendationInterceptor(hostname, orchestratorHostname, recommendationManagerName);
 		}
 
 		private String retrieveProperty(Context context, String systemPropertyName, String contextPropertyName) {
@@ -129,6 +134,7 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 		public void configure(Context ctx) {
 			this.hostname = retrieveProperty(ctx, "idomaar.recommendation.hostname", "zeromqSocket");
 			this.orchestratorHostname = retrieveProperty(ctx, "idomaar.orchestrator.hostname", "orchestratorZeromqSocket");
+			this.recommendationManagerName = Preconditions.checkNotNull(retrieveProperty(ctx, "idomaar.recommendation.manager.name", "recommendationManagerName"));
 		}
 	}
 
