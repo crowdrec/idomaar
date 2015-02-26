@@ -1,6 +1,9 @@
+require 'yaml'
+settings = YAML.load_file 'vagrant.yml'
 
 BOX_NAME   		= 'ubuntu/trusty64'
 BOX_URL       = 'https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box'
+box_ip_address = settings['box']['ip_address']
 
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
@@ -11,7 +14,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = BOX_NAME
   config.vm.box_url = BOX_URL
 	 
-  config.vm.network :private_network, ip: "192.168.22.5"
+  config.vm.network :private_network, ip: box_ip_address
   config.vm.provider :virtualbox do |vb|
       vb.customize ["modifyvm", :id, "--memory", "2048"]
   end

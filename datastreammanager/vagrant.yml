@@ -1,0 +1,5 @@
+box:
+  ip_address: 192.168.22.5
+
+zookeeper:
+  port: 2181

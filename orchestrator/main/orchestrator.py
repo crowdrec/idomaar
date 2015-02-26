@@ -5,6 +5,7 @@ import  subprocess
 import sys
 import logging
 import colorlog
+import yaml
 from recommendation_manager import RecommendationManager
 from vagrant_executor import VagrantExecutor
 
@@ -18,9 +19,18 @@ class OrchestratorState(Enum):
     recommending = 4
 
 class Orchestrator(object):
-    def __init__(self, executor, port=2760):
-        self._context = zmq.Context()
+    def __init__(self, executor, datastreammanager, computing_env, training_uri, test_uri, port=2760):
         self.executor = executor
+        self.datastreammanager = datastreammanager
+        self.computing_env = computing_env
+        self.training_uri = training_uri
+        self.test_uri = test_uri
+
+        logger.info("Training data URI: %s" % training_uri)
+        logger.info("Test data URI: %s" % test_uri)
+        logger.info("Computing environment path: %s" % computing_env)
+
+        self._context = zmq.Context()
         self._socket = self._context.socket(zmq.REP)
         self._socket.bind("tcp://*:%s" % port)
         self._state = OrchestratorState.ready
@@ -33,45 +43,8 @@ class Orchestrator(object):
 
         self.reco_managers_by_name = self.create_recommendation_managers(self.num_concurrent_recommendation_managers)
 
-        self._training_uri = None
-        self._test_uri = None
-        self._computing_env = None
-        self._algorithm = None
-
     def create_recommendation_managers(self, count):
         return {"RM" + str(i): RecommendationManager("RM" + str(i), self.executor) for i in range(count)}
-
-    @property
-    def training_uri(self):
-        return self._training_uri
-
-    @training_uri.setter
-    def training_uri(self, value):
-        self._training_uri = value
-
-    @property
-    def test_uri(self):
-        return self._test_uri
-
-    @test_uri.setter
-    def test_uri(self, value):
-        self._test_uri = value
-
-    @property
-    def computing_env(self):
-        return self._computing_env
-
-    @computing_env.setter
-    def computing_env(self, value):
-        self._computing_env = value
-
-    @property
-    def algorithm(self):
-        return self._algorithm
-
-    @algorithm.setter
-    def algorithm(self, value):
-        self._algorithm = value
 
     def start_vm(self):
         if self.computing_env is None:
@@ -80,15 +53,17 @@ class Orchestrator(object):
         logger.info("DO: starting Computing environment")
         return self.executor.start(working_dir=self.computing_env, subprocess_logger=computing_environment_logger)
 
-    def send_train(self):
+    def read_yaml_config(self, file_name):
+        with open(file_name, 'r') as input_file:
+            return yaml.load(input_file)
+
+    def send_train(self, zookeeper_hostport):
         """Sends a TRAIN message to the computing environment, then instructs the flume agent on the datastreammanager vm to start streaming training data"""
-        # TODO: zookeeper url has to be determined by vagrant from datastreammanager machine
-        zookeeper = "192.168.22.5:2181"
 
         # Pass to the orchestrator the zookeeper address and the name of the topics
         # THE FORMAT IS
         # MESSAGE, ZOOKEEPER URL, ENTITIES TOPIC, RELATIONS TOPIC
-        msg = ['TRAIN', zookeeper, "data"]
+        msg = ['TRAIN', zookeeper_hostport, "data"]
         logger.warning("WAIT: sending message ["+ ', '.join(msg) +"] and wait for response")
 
         self._socket.send_multipart(msg)
@@ -104,19 +79,28 @@ class Orchestrator(object):
 
         self._state = OrchestratorState.reading_input
 
-    def prepare(self):
-        self.executor.start_datastream()
-        self.executor.configure_datastream(self.num_concurrent_recommendation_managers)
-        self.start_vm()
+    def read_zookeeper_hostport(self):
+        datastream_config = self.read_yaml_config(os.path.join(self.datastreammanager, "vagrant.yml"))
+        datastream_ip_address = datastream_config['box']['ip_address']
+        zookeeper_port = datastream_config['zookeeper']['port']
+        zookeeper_hostport = "{host}:{port}".format(host=datastream_ip_address, port=zookeeper_port)
+        return zookeeper_hostport
 
     def run(self):
+
+        zookeeper_hostport = self.read_zookeeper_hostport()
+
+        self.executor.start_datastream()
+        self.executor.configure_datastream(self.num_concurrent_recommendation_managers, zookeeper_hostport)
+        self.start_vm()
+
         if self.training_uri is None:
             logger.error("Training dataset is not set!")
             return
-
         if self.test_uri is None:
             logger.error("Test dataset is not set!")
             return
+
 
         logger.warning("WAIT: waiting for machine to be ready")
 
@@ -128,7 +112,7 @@ class Orchestrator(object):
             if message[0] == 'READY':
                 logger.info("INFO: machine started")
                 # Tell the computing environment to start reading training data from the kafka queue
-                self.send_train()
+                self.send_train(zookeeper_hostport)
 
             elif message[0] == 'OK':
                 if self._state == OrchestratorState.reading_input:
@@ -242,18 +226,13 @@ if __name__ == '__main__':
     vagrant_executor = VagrantExecutor(reco_engine_hostport='192.168.22.100:5560', orchestrator_port=2761,
                                        datastream_manager_working_dir=os.path.join(basedir, "datastreammanager"))
 
-    orchestrator = Orchestrator(executor=vagrant_executor)
-    orchestrator.training_uri = sys.argv[2]
-    orchestrator.test_uri = sys.argv[3]
-    orchestrator.computing_env = os.path.join(computing_env_dir, sys.argv[1])
-    orchestrator.datastreammanager = os.path.join(basedir, "datastreammanager")
+    orchestrator = Orchestrator(executor=vagrant_executor,
+                                datastreammanager = os.path.join(basedir, "datastreammanager"),
+                                computing_env = os.path.join(computing_env_dir, sys.argv[1]),
+                                training_uri = sys.argv[2], test_uri = sys.argv[3])
 
     logger.info("Idomaar base path: %s" % basedir)
-    logger.info("Training data URI: %s" % orchestrator.training_uri)
-    logger.info("Test data URI: %s" % orchestrator.test_uri)
-    logger.info("Computing environment path: %s" % orchestrator.computing_env)
 
-    orchestrator.prepare()
     orchestrator.run()
 
     # TODO: check if data stream channel is empty (http metrics)

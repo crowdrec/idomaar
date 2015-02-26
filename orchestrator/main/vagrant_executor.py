@@ -71,18 +71,19 @@ class VagrantExecutor:
         logger.info("DO: starting data stream")
         return self.start(working_dir=self.datastream_manager_working_dir, subprocess_logger=datastream_logger)
 
-    def configure_datastream(self, recommendation_partitions):
+    def configure_datastream(self, recommendation_partitions, zookeeper_hostport):
         """
         Configure the datastream vm for the upcoming task:
          * Increase the number of kafka topics, if necessary
         """
-        topic_info = "/opt/apache/kafka/bin/kafka-topics.sh --zookeeper localhost:2181 --topic recommendations --describe"
+        topic_info = "/opt/apache/kafka/bin/kafka-topics.sh --zookeeper {zookeeper} --topic recommendations --describe".format(zookeeper=zookeeper_hostport)
         result = self.run_on_data_stream_manager(topic_info, exit_on_failure=False, capture_output=True)
         num_partitions = len([str(line) for line in result if "Partition: " in str(line)])
         logger.info("Detected number of partitions for 'recommendations' topic: " + str(num_partitions))
         if recommendation_partitions > num_partitions:
             logger.info("Setting the number of partitions of 'recommendation' topic to at least " + str(recommendation_partitions))
-            topic_set = "/opt/apache/kafka/bin/kafka-topics.sh --alter --zookeeper localhost:2181 --topic recommendations --partitions " + str(recommendation_partitions)
+            topic_set = "/opt/apache/kafka/bin/kafka-topics.sh --alter --zookeeper {zookeeper_hostport} --topic recommendations --partitions {partitions} ".\
+                            format(zookeeper_hostport=zookeeper_hostport, partitions=recommendation_partitions)
             self.run_on_data_stream_manager(topic_set)
         else: logger.info("Required num partitions " + str(recommendation_partitions) + ", so leaving it as it is.")
 
