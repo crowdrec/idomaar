@@ -7,6 +7,7 @@ Install python	https://www.python.org/downloads/release/python-279/
 Install pip (included with Python 2.79)
 
 Install pyzmq and enum34 via pip (go to pip dir, type pip enum34 and pip pyzmq)
+Install pyyaml via pip (or, on Win, from http://www.lfd.uci.edu/~gohlke/pythonlibs/)
 
 (Install ruby if required)
 
