@@ -11,11 +11,12 @@ class VagrantExecutor:
     Run vagrant commands to actually execute operations initiated by the orchestrator.
     """
 
-    def __init__(self, reco_engine_hostport, orchestrator_port, datastream_manager_working_dir):
+    def __init__(self, reco_engine_hostport, orchestrator_port, datastream_manager_working_dir, recommendation_timeout_millis):
         """
         :param reco_engine_hostport: host and port of the recommendation engine
         :param orchestrator_port: used by the recommendation manager agent
         """
+        self.recommendation_timeout_millis = recommendation_timeout_millis
         self.orchestrator_port = orchestrator_port
         self.reco_engine_hostport = reco_engine_hostport
         self.datastream_manager_working_dir = datastream_manager_working_dir
@@ -35,7 +36,7 @@ class VagrantExecutor:
     def start_recommendation_manager(self, name):
         """:param name: The name of the recommendation manager agent"""
         logger.info("Starting recommendation manager " + name)
-        recommendation_manager_start = "/vagrant/flume-config/startup/recommendation_manager-agent start " + name + " " + self.reco_engine_hostport + " " + str(self.orchestrator_port)
+        recommendation_manager_start = ' '.join(["/vagrant/flume-config/startup/recommendation_manager-agent start", name, self.reco_engine_hostport, str(self.orchestrator_port), str(self.recommendation_timeout_millis)])
         self.run_on_data_stream_manager(recommendation_manager_start)
 
     def stop_recommendation_manager(self, name):

@@ -2,6 +2,7 @@ package eu.crowdrec.flume.plugins.interceptor;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +15,7 @@ import org.zeromq.ZMQ.Socket;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.interceptor.Interceptor;
+import zmq.ZError;
 
 public class IdomaarRecommendationInterceptor implements Interceptor {
 
@@ -26,15 +28,18 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	private final String orchestratorHostname;
 	private final org.zeromq.ZMQ.Context zmqContext;
 	private final String recommendationAgentName;
+	private final int timeoutMillis;
 
 	private static String fieldSeparator = "\\t";
 
-	public IdomaarRecommendationInterceptor(String hostname, String orchestratorHostname, String recommendationAgentName) {
+	public IdomaarRecommendationInterceptor(String hostname, String orchestratorHostname, String recommendationAgentName, int timeoutMillis) {
 		_hostname = hostname;
 		this.orchestratorHostname = orchestratorHostname;
 		this.recommendationAgentName = recommendationAgentName;
+		this.timeoutMillis = timeoutMillis;
 		zmqContext = ZMQ.context(1);
 		requester = zmqContext.socket(ZMQ.REQ);
+		requester.setReceiveTimeOut(timeoutMillis);
 		orchestratorConnection = ZMQ.context(1).socket(ZMQ.REQ);
 	}
 
@@ -71,16 +76,24 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 					requester.sendMore(parsedRequest[3]);
 					requester.send(parsedRequest[4], ZMQ.NOBLOCK);
 
-					// TODO MANAGE TIMEOUT
 					ZMsg reply =  ZMsg.recvMsg(requester);
+					if (reply == null) {
+						if (requester.base().errno() == ZError.EAGAIN) {
+							logger.error("Error while waiting for recommendation results for request {}, possible timeout.", Arrays.toString(parsedRequest));
+						}
+						else {
+							logger.error("Error or no answer to recommendation request {}", Arrays.toString(parsedRequest));
+						}
+					}
+					else {
+						logger.info("Received recommendation [" + reply + "]");
 
-					logger.info("Received recommendation [" + reply + "]");
-
-					String response = body + fieldSeparator + reply.remove().toString();
+						String response = body + fieldSeparator + reply.remove().toString();
 
 
-					// TODO PARSING RESPONSE AND ADD IT TO RESULT
-					event.setBody( response.getBytes(Charset.forName("UTF-8")));
+						// TODO PARSING RESPONSE AND ADD IT TO RESULT
+						event.setBody(response.getBytes(Charset.forName("UTF-8")));
+					}
 				}
 			}
 		} catch(Exception ex) {
@@ -118,10 +131,11 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 		private String hostname;
 		private String orchestratorHostname;
 		private String recommendationManagerName;
+		private int timeoutMillis;
 
 		@Override
 		public Interceptor build() {
-			return new IdomaarRecommendationInterceptor(hostname, orchestratorHostname, recommendationManagerName);
+			return new IdomaarRecommendationInterceptor(hostname, orchestratorHostname, recommendationManagerName, timeoutMillis);
 		}
 
 		private String retrieveProperty(Context context, String systemPropertyName, String contextPropertyName) {
@@ -135,6 +149,7 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 			this.hostname = retrieveProperty(ctx, "idomaar.recommendation.hostname", "zeromqSocket");
 			this.orchestratorHostname = retrieveProperty(ctx, "idomaar.orchestrator.hostname", "orchestratorZeromqSocket");
 			this.recommendationManagerName = Preconditions.checkNotNull(retrieveProperty(ctx, "idomaar.recommendation.manager.name", "recommendationManagerName"));
+			this.timeoutMillis = Integer.parseInt(retrieveProperty(ctx, "idomaar.recommendation.timeout.millis", "timeoutMillis"));
 		}
 	}
 

@@ -39,7 +39,7 @@ class Orchestrator(object):
         self.reco_manager_socket.bind('tcp://*:%s' % self.executor.orchestrator_port)
 
         # TODO Number of (concurrently running) recommendation managers should be configured externally, see issue #40
-        self.num_concurrent_recommendation_managers = 10
+        self.num_concurrent_recommendation_managers = 1
 
         self.reco_managers_by_name = self.create_recommendation_managers(self.num_concurrent_recommendation_managers)
 
@@ -123,10 +123,6 @@ class Orchestrator(object):
 
                     for reco_manager in self.reco_managers_by_name.itervalues():
                         reco_manager.start()
-
-                    # recommendation_server_0mq = '192.168.22.100:5560'
-                    # recommendation_manager_start = "/vagrant/flume-config/startup/recommendation_manager-agent start " + recommendation_server_0mq + " " + str(self.reco_manager_connection_port)
-                    # self.executor.run_on_data_stream_manager(recommendation_manager_start)
 
                     ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
                     logger.info("Start sending test data to queue")
@@ -224,7 +220,7 @@ if __name__ == '__main__':
 
     # TODO RECOMMENDATION HOSTNAME MUST BE EXTRACTED FROM MESSAGES
     vagrant_executor = VagrantExecutor(reco_engine_hostport='192.168.22.100:5560', orchestrator_port=2761,
-                                       datastream_manager_working_dir=os.path.join(basedir, "datastreammanager"))
+                                       datastream_manager_working_dir=os.path.join(basedir, "datastreammanager"), recommendation_timeout_millis=4000)
 
     orchestrator = Orchestrator(executor=vagrant_executor,
                                 datastreammanager = os.path.join(basedir, "datastreammanager"),
