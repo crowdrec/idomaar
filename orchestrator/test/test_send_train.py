@@ -26,7 +26,7 @@ if __name__ == "__main__":
     computing_environment.send_ready_message()
 
     print("WAIT: waiting for new message")
-    message = orchestrator._socket.recv_multipart()
+    message = orchestrator.comp_env_socket.recv_multipart()
     print("0MQ: received message: %s " % message)
     test_send_train()
 

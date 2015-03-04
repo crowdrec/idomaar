@@ -20,7 +20,8 @@ public class ItembasedRec_batch {
 	private static final String OUTMSG_READY = "READY";
 	private static final String OUTMSG_OK = "OK";
 	private static final String OUTMSG_KO = "KO";
-	
+
+	private static final String HELLO = "HELLO";
 	private static final String TRAIN_CMD = "TRAIN";
 	private static final String RECOMMEND_CMD = "TEST";
 
@@ -30,8 +31,8 @@ public class ItembasedRec_batch {
 	private InternalDataModel dataModel;
 	
 	private String stagedir = null;
-	private Socket socket_request = null;
-	private Socket socket_response = null;
+	private Socket orchestratorSocket = null;
+	private Socket recommendationSocket = null;
 	
 	private static String zeromqBindAddress = "0.0.0.0";
 	private static String zeromqBindPort = "5560";
@@ -61,28 +62,27 @@ public class ItembasedRec_batch {
 		String tmpOutDir = args[0];
 		String comm = args[1];
 
-		System.out.println("ALGO: ZMQ creating context");
 		Context context = ZMQ.context(1);
-		System.out.println("ALGO: ZMQ created context");
-		System.out.println("ALGO: ZMQ creating socket");
-		Socket socket_req = context.socket(ZMQ.REQ);
-		System.out.println("ALGO: ZMQ created context");
-		socket_req.setReceiveTimeOut(10000);
-		System.out.println("ALGO: ZMQ setting timeout");
-		System.out.println("ALGO: ZMQ connecting to socket");
-		socket_req.connect(comm);
-		System.out.println("ALGO: ZMQ connected to socket");
+		System.out.println("ZMQ creating server socket, binding to " + comm + " to receive messages from orchestrator... ");
+		Socket orchestratorSocket = context.socket(ZMQ.REP);
+		orchestratorSocket.bind(comm);
+//		System.out.println("ZMQ created context");
+//		orchestratorSocket.setReceiveTimeOut(10000);
+//		System.out.println("ZMQ setting timeout");
+//		System.out.println("ZMQ connecting to socket");
+//		orchestratorSocket.connect(comm);
 
-		Socket socket_res = context.socket(ZMQ.REP);
-		String localSocket = getZeromqBindAddress();
-		
-		
-		System.out.println("Creating zeromq socket " + localSocket);
-		socket_res.bind(localSocket);
+//		System.out.println("ZMQ connected to socket");
+
+		Socket recommendationSocket = context.socket(ZMQ.REP);
+		String recommendationSocketAddress = getZeromqBindAddress();
+
+		System.out.println("Creating recommendation ZMQ socket and binding to " + recommendationSocketAddress);
+		recommendationSocket.bind(recommendationSocketAddress);
 		
 		
 		while(true) {
-			ItembasedRec_batch ubr = new ItembasedRec_batch(tmpOutDir, socket_req, socket_res);
+			ItembasedRec_batch ubr = new ItembasedRec_batch(tmpOutDir, orchestratorSocket, recommendationSocket);
 			ubr.run();
 		}
 		
@@ -95,35 +95,40 @@ public class ItembasedRec_batch {
 		return "tcp://" + zeromqBindAddress + ":" + zeromqBindPort;
 	}
 
-	public ItembasedRec_batch(String stagedir, Socket socket_req, Socket socket_rep) throws IOException {
+	public ItembasedRec_batch(String stagedir, Socket orchestratorSocket, Socket recommendationSocket) throws IOException {
 		this.stagedir = stagedir;
-		this.socket_request = socket_req;
-		this.socket_response = socket_rep;
-		
-		
+		this.orchestratorSocket = orchestratorSocket;
+		this.recommendationSocket = recommendationSocket;
 		dataModel = new InternalDataModel(stagedir, TMP_MAHOUT_USERRATINGS_FILENAME);
-
-
-		System.out.println("ALGO: machine started");
+		System.out.println("machine started");
 	}
 
 	public void run() throws IOException, TasteException {
+		System.out.println("Computing environment running ...");
 		Recommender recommender = null;
 		boolean stop = false;
 
-		System.out.println("ALGO: sending READY message");
-		socket_request.send(OUTMSG_READY, 0);
-		
+//		System.out.println("ALGO: sending READY message");
+//		orchestratorSocket.send(OUTMSG_READY, 0);
+
+//		ZMsg initialReqeuest =  ZMsg.recvMsg(orchestratorSocket);
+//		System.out.println("Received request: ["+recvMsg+"].");
+
 		while ( !stop ) {
 			ZMsg recvMsg = null;
 			while ( recvMsg == null ) {
-				recvMsg = ZMsg.recvMsg(this.socket_request);
+				System.out.println("Waiting for message ...");
+				recvMsg = ZMsg.recvMsg(this.orchestratorSocket);
 			}
-			System.out.println("ALGO: received message: " + recvMsg.toString());
+			System.out.println("Message from orchestrator: " + recvMsg.toString());
 			ZFrame command = recvMsg.remove();
 
-			if (command.streq(TRAIN_CMD)) {
-				System.out.println("ALGO: running READ INPUT cmd");
+			if (command.streq(HELLO)) {
+				orchestratorSocket.send(OUTMSG_READY);
+				System.out.println("Sent " + OUTMSG_READY + " to orchestrator.");
+			}
+			else if (command.streq(TRAIN_CMD)) {
+				System.out.println("Running READ INPUT cmd");
 				boolean success = cmdReadinput(recvMsg);
 
 				if(success) {
@@ -133,19 +138,18 @@ public class ItembasedRec_batch {
 					startRecommendationServer(recommender);
 					System.out.println("ALGO: Started recommendation engine, zeromq bind to " + getZeromqBindAddress());
 
-					socket_request.sendMore(OUTMSG_OK);
-					socket_request.sendMore(zeromqBindAddress);
-					socket_request.send(zeromqBindPort);
+					orchestratorSocket.sendMore(OUTMSG_OK);
+					orchestratorSocket.sendMore(zeromqBindAddress);
+					orchestratorSocket.send(zeromqBindPort);
 					
 				} else {
-					socket_request.send(OUTMSG_KO);
+					orchestratorSocket.send(OUTMSG_KO);
 					System.out.println("ALGO: error in receiving input");
 					stop = true;
 					
 				}
-				
-			
-			} else if (command.streq(RECOMMEND_CMD)) {
+			}
+			else if (command.streq(RECOMMEND_CMD)) {
 				// I NEED TO WAIT THE EOF MESSAGE
 				// IN THIS IMPLEMENTATION I DON'T TAKE INTO ACCOUNT ANY STREAM/TEST DATA
 			
@@ -156,7 +160,7 @@ public class ItembasedRec_batch {
 
 				System.out.println("ALGO: sending ack");
 			
-				socket_request.send(OUTMSG_OK, 0);
+				orchestratorSocket.send(OUTMSG_OK, 0);
 				stop = true;
 			}
 			else {
@@ -191,7 +195,7 @@ public class ItembasedRec_batch {
 	}
 	
 	protected void startRecommendationServer(Recommender recommender) {
-		recommendationEngine = new RecommendationEngine(socket_response, recommender);
+		recommendationEngine = new RecommendationEngine(recommendationSocket, recommender);
 		
 		 Thread t = new Thread(recommendationEngine);
 	     t.start();
