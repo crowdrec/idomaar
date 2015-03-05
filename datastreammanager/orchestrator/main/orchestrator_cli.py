@@ -20,17 +20,17 @@ class OrchestratorCli(cli.Application):
     comp_env = None
 
     @cli.switch("--comp-env-dir", str)
-    def comp_env(self, directory):
+    def get_comp_env(self, directory):
         """The relative path to the computing environment vagrant directory. This only makes sense if the orchestrator runs on the same host as the computing environment."""
         self.comp_env = directory
 
     @cli.switch("--training-uri", str, mandatory=True)
-    def training_uri(self, training_uri):
+    def get_training_uri(self, training_uri):
         """The location of the training data."""
         self.training_uri = training_uri
 
     @cli.switch("--test-uri", str, mandatory=True)
-    def test_uri(self, test_uri):
+    def get_test_uri(self, test_uri):
         """The location of the test data."""
         self.test_uri = test_uri
 
