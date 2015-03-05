@@ -1,9 +1,5 @@
-from bsddb.dbtables import ExactCond
-from setuptools.command.sdist import re_finder
 import  zmq
 import  os
-from    enum import Enum
-import  subprocess
 import sys
 import logging
 import colorlog
@@ -15,12 +11,6 @@ from vagrant_executor import VagrantExecutor
 
 logger = logging.getLogger("orchestrator")
 computing_environment_logger = logging.getLogger("computing_environment")
-
-class OrchestratorState(Enum):
-    ready = 1
-    reading_input = 2
-    training = 3
-    recommending = 4
 
 class Orchestrator(object):
     def __init__(self, executor, datastreammanager, computing_env, training_uri, test_uri, port=2760):
@@ -41,10 +31,6 @@ class Orchestrator(object):
 
         self._context = zmq.Context()
         self.comp_env_socket = self._context.socket(zmq.REQ)
-
-        #self.comp_env_socket.bind("tcp://*:%s" % port)
-
-        self._state = OrchestratorState.ready
 
         self.reco_manager_socket = zmq.Context().socket(zmq.REP)
         self.reco_manager_socket.bind('tcp://*:%s' % self.executor.orchestrator_port)
@@ -155,9 +141,6 @@ class Orchestrator(object):
         logger.warn("WAIT: sending message "+ ''.join(test_message) +" and wait for response")
 
         self.response_from_comp_env(request=test_message)
-
-        self._state = OrchestratorState.recommending
-
         logger.info("INFO: recommendations correctly generated, waiting for finished message from recommendation manager agents")
 
         reco_manager_message = self.reco_manager_socket.recv_multipart()
