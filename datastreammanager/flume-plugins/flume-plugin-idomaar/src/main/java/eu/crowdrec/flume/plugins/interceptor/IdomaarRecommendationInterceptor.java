@@ -28,7 +28,6 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	private final String orchestratorHostname;
 	private final org.zeromq.ZMQ.Context zmqContext;
 	private final String recommendationAgentName;
-	private final int timeoutMillis;
 
 	private static String fieldSeparator = "\\t";
 
@@ -36,7 +35,6 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 		_hostname = hostname;
 		this.orchestratorHostname = orchestratorHostname;
 		this.recommendationAgentName = recommendationAgentName;
-		this.timeoutMillis = timeoutMillis;
 		zmqContext = ZMQ.context(1);
 		requester = zmqContext.socket(ZMQ.REQ);
 		requester.setReceiveTimeOut(timeoutMillis);
