@@ -4,6 +4,7 @@ dpkg -i cdh5-repository_1.0_all.deb
 
 apt-get update
 apt-get -y install flume-ng zookeeper-server
+apt-get -y install python-pip
 
 # INIT ZOOKEEPER
 /etc/init.d/zookeeper-server init

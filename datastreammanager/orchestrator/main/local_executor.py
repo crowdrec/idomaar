@@ -5,9 +5,8 @@ import sys
 
 logger = logging.getLogger("orchestrator:execute")
 datastream_logger = logging.getLogger("datastream")
-computing_environment_logger = logging.getLogger("computing_environment")
 
-class VagrantExecutor:
+class LocalExecutor:
     """
     Run vagrant commands to actually execute operations initiated by the orchestrator.
     """
@@ -26,10 +25,11 @@ class VagrantExecutor:
         """
         Run a command on the data stream manager VM. Returns the subprocess exit code.
         """
-        vagrant_command = ["vagrant", "ssh", "-c", "sudo " + command]
-        vagrant_command_string = ' '.join(vagrant_command)
+        command_list = command.split(" ")
+        command_list.insert(0, "sudo")
+        vagrant_command_string = ' '.join(command_list)
         logger.info("On data stream manager, executing command " + vagrant_command_string)
-        result = self.execute_with_output(command=vagrant_command, working_dir=self.datastream_manager_working_dir,
+        result = self.execute_with_output(command=command_list, working_dir=self.datastream_manager_working_dir,
                                      subprocess_logger=datastream_logger, exit_on_failure=exit_on_failure)
         if capture_output: return result
         else: return result[0]
@@ -70,12 +70,12 @@ class VagrantExecutor:
         return output_lines
 
     def start_datastream(self):
-        logger.info("DO: starting data stream")
-        return self.start(working_dir=self.datastream_manager_working_dir, subprocess_logger=datastream_logger)
+        logger.info("*We* are the datastream vm." )
+        # return self.start(working_dir=self.datastream_manager_working_dir, subprocess_logger=datastream_logger)
 
     def start_computing_environment(self):
-        logger.info("DO: starting Computing environment")
-        return self.start(working_dir=self.computing_env, subprocess_logger=computing_environment_logger)
+        logger.warn("Cannot start computing environment from datastream vm, it must be started externally.")
+
 
     def configure_datastream(self, recommendation_partitions, zookeeper_hostport):
         """

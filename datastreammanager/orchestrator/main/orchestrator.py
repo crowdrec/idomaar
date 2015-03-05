@@ -10,7 +10,6 @@ from util import timed_exec
 from vagrant_executor import VagrantExecutor
 
 logger = logging.getLogger("orchestrator")
-computing_environment_logger = logging.getLogger("computing_environment")
 
 class Orchestrator(object):
     def __init__(self, executor, datastreammanager, computing_env, training_uri, test_uri, port=2760):
@@ -20,14 +19,6 @@ class Orchestrator(object):
         self.computing_env = computing_env
         self.training_uri = training_uri
         self.test_uri = test_uri
-
-        if self.computing_env is None: raise Exception("Computing env not set!")
-        if self.training_uri is None: raise Exception("Training dataset is not set!")
-        if self.test_uri is None: raise Exception("Test dataset is not set!")
-
-        logger.info("Training data URI: %s" % training_uri)
-        logger.info("Test data URI: %s" % test_uri)
-        logger.info("Computing environment path: %s" % computing_env)
 
         self._context = zmq.Context()
         self.comp_env_socket = self._context.socket(zmq.REQ)
@@ -117,7 +108,7 @@ class Orchestrator(object):
 
         self.executor.start_datastream()
         self.executor.configure_datastream(self.num_concurrent_recommendation_managers, zookeeper_hostport)
-        self.start_computing_environment()
+        self.executor.start_computing_environment()
         self.connect_to_comp_env()
 
         logger.info("Successfully connected to computing environment, start feeding train data.")
@@ -131,7 +122,7 @@ class Orchestrator(object):
         ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
         logger.info("Start sending test data to queue")
 
-        test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + orchestrator.test_uri + " -Didomaar.sourceType=file"
+        test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + self.test_uri + " -Didomaar.sourceType=file"
         self.executor.run_on_data_stream_manager(test_data_feed_command)
 
         ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
@@ -169,60 +160,3 @@ class Orchestrator(object):
 #        self.comp_env_socket.close()
         self._context.destroy()
         logger.info("Orchestrator shutdown.")
-
-
-def setup_logging(logger_to_conf):
-    logger_to_conf.setLevel("DEBUG")
-    logger_to_conf.propagate = False
-    handler = logging.StreamHandler(sys.stdout)
-
-    formatter = colorlog.ColoredFormatter(
-        "%(log_color)s%(levelname)-8s [%(name)s] %(message)s",
-        datefmt=None,
-        reset=True,
-        log_colors={
-            'DEBUG':    'blue',
-            'INFO':     'blue',
-            'WARNING':  'yellow',
-            'ERROR':    'red',
-            'CRITICAL': 'red',
-            },
-        secondary_log_colors={},
-        style='%')
-
-    handler.setFormatter(formatter)
-    logger_to_conf.addHandler(handler)
-
-
-if __name__ == '__main__':
-
-    root_logger = logging.getLogger()
-    setup_logging(root_logger)
-
-    basedir = os.path.abspath("../../")
-    computing_env_dir = os.path.join(basedir, "computingenvironments")
-
-    # TODO RECOMMENDATION HOSTNAME MUST BE EXTRACTED FROM MESSAGES
-    vagrant_executor = VagrantExecutor(reco_engine_hostport='192.168.22.100:5560', orchestrator_port=2761,
-                                       datastream_manager_working_dir=os.path.join(basedir, "datastreammanager"), recommendation_timeout_millis=4000)
-
-    orchestrator = Orchestrator(executor=vagrant_executor,
-                                datastreammanager = os.path.join(basedir, "datastreammanager"),
-                                computing_env = os.path.join(computing_env_dir, sys.argv[1]),
-                                training_uri = sys.argv[2], test_uri = sys.argv[3])
-
-    logger.info("Idomaar base path: %s" % basedir)
-
-    try:
-        orchestrator.run()
-    except Exception:
-        logger.exception("Exception occurred, hard shutdown.")
-        os._exit(-1)
-
-    # TODO: check if data stream channel is empty (http metrics)
-    # TODO: test/evaluate the output
-
-    #logger.info("DO: Stopping computing environment")
-    #orchestrator.executor.stop(working_dir=orchestrator.computing_env, subprocess_logger=computing_environment_logger)
-
-    logger.info("Finished.")
