@@ -1,4 +1,5 @@
 #!/bin/bash
+vagrant -v
 BASEDIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd $BASEDIR/datastreammanager
 echo "Working directory is" `pwd`

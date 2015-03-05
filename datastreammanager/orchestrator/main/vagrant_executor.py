@@ -12,11 +12,12 @@ class VagrantExecutor:
     Run vagrant commands to actually execute operations initiated by the orchestrator.
     """
 
-    def __init__(self, reco_engine_hostport, orchestrator_port, datastream_manager_working_dir, recommendation_timeout_millis):
+    def __init__(self, reco_engine_hostport, orchestrator_port, datastream_manager_working_dir, recommendation_timeout_millis, computing_env):
         """
         :param reco_engine_hostport: host and port of the recommendation engine
         :param orchestrator_port: used by the recommendation manager agent
         """
+        self.computing_env = computing_env
         self.recommendation_timeout_millis = recommendation_timeout_millis
         self.orchestrator_port = orchestrator_port
         self.reco_engine_hostport = reco_engine_hostport

@@ -12,11 +12,10 @@ from vagrant_executor import VagrantExecutor
 logger = logging.getLogger("orchestrator")
 
 class Orchestrator(object):
-    def __init__(self, executor, datastreammanager, computing_env, training_uri, test_uri, port=2760):
+    def __init__(self, executor, datastreammanager, training_uri, test_uri, port=2760):
         self.executor = executor
         self.datastreammanager = datastreammanager
 
-        self.computing_env = computing_env
         self.training_uri = training_uri
         self.test_uri = test_uri
 
@@ -33,10 +32,6 @@ class Orchestrator(object):
 
     def create_recommendation_managers(self, count):
         return {"RM" + str(i): RecommendationManager("RM" + str(i), self.executor) for i in range(count)}
-
-    def start_computing_environment(self):
-        logger.info("DO: starting Computing environment")
-        return self.executor.start(working_dir=self.computing_env, subprocess_logger=computing_environment_logger)
 
     def read_yaml_config(self, file_name):
         with open(file_name, 'r') as input_file:
