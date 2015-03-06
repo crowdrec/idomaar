@@ -57,7 +57,7 @@ class Orchestrator(object):
             logger.info("Training completed successfully, took {0} minutes.".format(took_mins))
             return train_response
         if train_response[0] == 'KO':
-            raise Exception("ERROR: some errors while training the recommender.")
+            raise Exception("Computing environment answered with 'KO': error occurred during recommendation model training.")
         else:
             raise Exception("Unexpected message received from computing environment." + str(train_response))
 
