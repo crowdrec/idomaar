@@ -64,6 +64,8 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 				logger.info("Received end of recommendation file");
 				orchestratorConnection.sendMore("FINISHED");
 				orchestratorConnection.send(recommendationAgentName, ZMQ.NOBLOCK);
+                ZMsg reply =  ZMsg.recvMsg(orchestratorConnection);
+                logger.info("Sent 'FINISHED' to orchestrator, received reply:" + reply.remove().toString());
 			} else {
 				logger.info("Requesting recommendation for event ["+body+"]");
 				if(parsedRequest.length < 5) {

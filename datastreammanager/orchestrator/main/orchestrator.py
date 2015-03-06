@@ -131,6 +131,7 @@ class Orchestrator(object):
 
         reco_manager_message = self.reco_manager_socket.recv_multipart()
         logger.info("Message from recommendation manager: %s " % reco_manager_message)
+        self.reco_manager_socket.send("OK")
         if reco_manager_message[0] == "FINISHED":
             reco_manager_name = reco_manager_message[1] if len(reco_manager_message) > 1 else ""
             reco_manager = self.reco_managers_by_name.get(reco_manager_name)
