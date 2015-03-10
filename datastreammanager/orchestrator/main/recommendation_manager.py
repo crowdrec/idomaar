@@ -11,8 +11,8 @@ class RecommendationManager:
         self.name = name
         self.executor = executor
 
-    def start(self, orchestrator_ip):
-        self.executor.start_recommendation_manager(self.name, orchestrator_ip)
+    def start(self, orchestrator_ip, recommendation_endpoint):
+        self.executor.start_recommendation_manager(self.name, orchestrator_ip, recommendation_endpoint)
 
     def stop(self):
         self.executor.stop_recommendation_manager(self.name)

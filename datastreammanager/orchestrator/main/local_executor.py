@@ -34,11 +34,11 @@ class LocalExecutor:
         if capture_output: return result
         else: return result[0]
 
-    def start_recommendation_manager(self, name, orchestrator_ip):
+    def start_recommendation_manager(self, name, orchestrator_ip, recommendation_endpoint):
         """:param name: The name of the recommendation manager agent"""
         logger.info("Starting recommendation manager " + name)
         orchestrator_connection = "tcp://{ip_address}:{port}".format(ip_address=orchestrator_ip, port=self.orchestrator_port)
-        recommendation_manager_start = ' '.join(["/vagrant/flume-config/startup/recommendation_manager-agent start", name, self.reco_engine_hostport, orchestrator_connection, str(self.recommendation_timeout_millis)])
+        recommendation_manager_start = ' '.join(["/vagrant/flume-config/startup/recommendation_manager-agent start", name, recommendation_endpoint, orchestrator_connection, str(self.recommendation_timeout_millis)])
         self.run_on_data_stream_manager(recommendation_manager_start)
 
     def stop_recommendation_manager(self, name):

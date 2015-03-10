@@ -24,15 +24,15 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	private Socket requester;
 	private Socket orchestratorConnection;
 
-	private final String _hostname;
+	private final String recommendationEndpoint;
 	private final String orchestratorHostport;
 	private final org.zeromq.ZMQ.Context zmqContext;
 	private final String recommendationAgentName;
 
 	private static String fieldSeparator = "\\t";
 
-	public IdomaarRecommendationInterceptor(String hostname, String orchestratorHostport, String recommendationAgentName, int timeoutMillis) {
-		_hostname = hostname;
+	public IdomaarRecommendationInterceptor(String recommendationEndpoint, String orchestratorHostport, String recommendationAgentName, int timeoutMillis) {
+		this.recommendationEndpoint = recommendationEndpoint;
 		this.orchestratorHostport = orchestratorHostport;
 		this.recommendationAgentName = recommendationAgentName;
 		zmqContext = ZMQ.context(1);
@@ -43,8 +43,8 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 
 	@Override
 	public void initialize() {
-		requester.connect(_hostname);
-		logger.info("Launched 0MQ client, bind to " + _hostname);
+		requester.connect(recommendationEndpoint);
+		logger.info("Launched 0MQ client, bind to " + recommendationEndpoint);
 		orchestratorConnection.connect(orchestratorHostport);
 		logger.info("Launched 0MQ client to connect to orchestrator, bind to " + orchestratorHostport);
 	}
@@ -130,14 +130,14 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	}
 
 	public static class Builder implements Interceptor.Builder {
-		private String hostname;
+		private String recommendationEndpoint;
 		private String orchestratorHostname;
 		private String recommendationManagerName;
 		private int timeoutMillis;
 
 		@Override
 		public Interceptor build() {
-			return new IdomaarRecommendationInterceptor(hostname, orchestratorHostname, recommendationManagerName, timeoutMillis);
+			return new IdomaarRecommendationInterceptor(recommendationEndpoint, orchestratorHostname, recommendationManagerName, timeoutMillis);
 		}
 
 		private String retrieveProperty(Context context, String systemPropertyName, String contextPropertyName) {
@@ -148,7 +148,7 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 
 		@Override
 		public void configure(Context ctx) {
-			this.hostname = retrieveProperty(ctx, "idomaar.recommendation.hostname", "zeromqSocket");
+			this.recommendationEndpoint = retrieveProperty(ctx, "idomaar.recommendation.hostname", "zeromqSocket");
 			this.orchestratorHostname = retrieveProperty(ctx, "idomaar.orchestrator.hostname", "orchestratorZeromqSocket");
 			this.recommendationManagerName = Preconditions.checkNotNull(retrieveProperty(ctx, "idomaar.recommendation.manager.name", "recommendationManagerName"));
 			this.timeoutMillis = Integer.parseInt(retrieveProperty(ctx, "idomaar.recommendation.timeout.millis", "timeoutMillis"));

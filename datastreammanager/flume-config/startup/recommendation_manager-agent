@@ -11,7 +11,7 @@ STATUS_NOT_RUNNING=3
 ERROR_PROGRAM_NOT_INSTALLED=5
 
 RECOMMENDATION_MANAGER_AGENT_NAME=$2
-IDOMAAR_RECOMMENDATION=$3
+RECOMMENDATION_ENDPOINT=$3
 ORCHESTRATOR_CONNECTION=$4
 RECOMMENDATION_TIMEOUT_MILLIS=$5
 
@@ -51,7 +51,7 @@ start() {
   fi
 
   log_success_msg "Starting $desc (flume-ng-agent): "
-  /bin/su -s /bin/bash -c "/bin/bash -c 'echo \$\$ >${FLUME_PID_FILE} && exec ${EXEC_PATH} agent --conf $FLUME_CONF_DIR --conf-file $FLUME_CONF_FILE --name $FLUME_AGENT_NAME -Didomaar.recommendation.hostname=tcp://$IDOMAAR_RECOMMENDATION -Didomaar.orchestrator.hostname=$ORCHESTRATOR_CONNECTION -Didomaar.recommendation.manager.name=$RECOMMENDATION_MANAGER_AGENT_NAME -Didomaar.recommendation.timeout.millis=$RECOMMENDATION_TIMEOUT_MILLIS >>${FLUME_LOG_DIR}/recommendation-manager.init.log 2>&1' &" $FLUME_USER
+  /bin/su -s /bin/bash -c "/bin/bash -c 'echo \$\$ >${FLUME_PID_FILE} && exec ${EXEC_PATH} agent --conf $FLUME_CONF_DIR --conf-file $FLUME_CONF_FILE --name $FLUME_AGENT_NAME -Didomaar.recommendation.hostname=$RECOMMENDATION_ENDPOINT -Didomaar.orchestrator.hostname=$ORCHESTRATOR_CONNECTION -Didomaar.recommendation.manager.name=$RECOMMENDATION_MANAGER_AGENT_NAME -Didomaar.recommendation.timeout.millis=$RECOMMENDATION_TIMEOUT_MILLIS >>${FLUME_LOG_DIR}/recommendation-manager.init.log 2>&1' &" $FLUME_USER
   RETVAL=$?
   [ $RETVAL -eq 0 ] && touch $LOCKFILE
   return $RETVAL

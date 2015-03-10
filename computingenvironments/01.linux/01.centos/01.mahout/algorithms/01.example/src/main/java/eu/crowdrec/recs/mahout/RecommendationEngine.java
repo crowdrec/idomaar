@@ -11,66 +11,74 @@ import javax.json.JsonReader;
 import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 import org.apache.mahout.cf.taste.recommender.Recommender;
+import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 import org.zeromq.ZMQ.Socket;
 
 public class RecommendationEngine implements Runnable {
-	Socket responder;
-	Recommender recom;
-	
+
+	private static String zeromqBindAddress = "0.0.0.0";
+	private static String zeromqBindPort = "5560";
+
+	private final Recommender recommender;
+
 	private boolean shutdown = false;
-	
-	public RecommendationEngine(Socket socket_response, Recommender recommender) {
-		responder = socket_response;
-		recom = recommender;
-		
-		System.out.println("Starting engine recommender=["+recom+"]");
+	private final String recommendationSocketAddress;
+
+	public RecommendationEngine(Recommender recommender) {
+		this.recommender = recommender;
+		System.out.println("Starting engine recommender=["+ this.recommender +"]");
+		recommendationSocketAddress = "tcp://" + zeromqBindAddress + ":" + zeromqBindPort;
 	}
-	
+
 	@Override
 	public void run() {
-		
-			
-		
-		 while (!shutdown && !Thread.currentThread().isInterrupted()) {
-	            //  Wait for next request from client
 
-			 	ZMsg recvMsg =  ZMsg.recvMsg(responder);
-	            System.out.println("Received request: ["+recvMsg+"].");
-	           
-				try {
-					String messageType = recvMsg.remove().toString();
-					
-					if (messageType.equals("RECOMMEND")) {
-						ZMsg msg = cmdRecommend(recvMsg);
-						System.out.println("Sending recommendation result " + msg);
-						msg.send(responder);
-					} else {
-						System.out.println("Unable to parse event " + messageType);
-						responder.send("KO");
-					}
-				} catch (IOException e) {
-					shutdown = true;
-					e.printStackTrace();
-				} catch (TasteException e) {
-					// TODO ADD MESSAGE TO RESPONSE
-					e.printStackTrace();
-					responder.send(e.toString());
-				} catch (Exception e) {
-					shutdown = true;
-					e.printStackTrace();
+		ZMQ.Context context = ZMQ.context(1);
+		Socket recommendationSocket = context.socket(ZMQ.REP);
+
+		System.out.println("Creating recommendation ZMQ socket and binding to " + recommendationSocketAddress);
+		recommendationSocket.bind(recommendationSocketAddress);
+
+		while (!shutdown && !Thread.currentThread().isInterrupted()) {
+			//  Wait for next request from client
+
+			ZMsg recvMsg =  ZMsg.recvMsg(recommendationSocket);
+			System.out.println("Received request: ["+recvMsg+"].");
+
+			try {
+				String messageType = recvMsg.remove().toString();
+
+				if (messageType.equals("RECOMMEND")) {
+					ZMsg msg = cmdRecommend(recvMsg);
+					System.out.println("Sending recommendation result " + msg);
+					msg.send(recommendationSocket);
+				} else {
+					System.out.println("Unable to parse event " + messageType);
+					recommendationSocket.send("KO");
 				}
-	           
-	        }
-		
+			} catch (IOException e) {
+				shutdown = true;
+				e.printStackTrace();
+			} catch (TasteException e) {
+				// TODO ADD MESSAGE TO RESPONSE
+				e.printStackTrace();
+				recommendationSocket.send(e.toString());
+			} catch (Exception e) {
+				shutdown = true;
+				e.printStackTrace();
+			}
+
+		}
+
 	}
 
 
-	
+
 	public void stop() {
 		this.shutdown=true;
 	}
-	
+
 	/*
 	subject_etype    user
 	subject_eid    1001
@@ -79,24 +87,24 @@ public class RecommendationEngine implements Runnable {
 	recomm_properties    { "explanation":"suggested by your close friends"}
 	linked_entities    [{"id":"movie:2001","rating":3.8,"rank":3}, {"id":"movie:2002","rating":4.3,"rank":1}, {"id":"movie:2003","rating":4,"rank":2,"explanation":{"reason":"you like","entity":"movie:2004"}}]
 */
-protected ZMsg cmdRecommend(ZMsg msg) throws Exception {
+	protected ZMsg cmdRecommend(ZMsg msg) throws Exception {
 
-	String jsonString = msg.remove().toString();
-	System.err.println("Received recommendation request json " + jsonString);
+		String jsonString = msg.remove().toString();
+		System.err.println("Received recommendation request json " + jsonString);
 
-	JsonReader reader = Json.createReader(new StringReader(jsonString));
-	JsonObject properties = reader.readObject();
-	
-	JsonReader reader_rel = Json.createReader(new StringReader(msg.remove().toString()));
-	JsonObject linkedEntities = reader_rel.readObject();
-	
+		JsonReader reader = Json.createReader(new StringReader(jsonString));
+		JsonObject properties = reader.readObject();
 
-	
-	int reclen = properties.getInt("reclen");
+		JsonReader reader_rel = Json.createReader(new StringReader(msg.remove().toString()));
+		JsonObject linkedEntities = reader_rel.readObject();
 
-	ZMsg recomms = new ZMsg();
 
-	String[] entityEls = linkedEntities.getString("subject").split(":");
+
+		int reclen = properties.getInt("reclen");
+
+		ZMsg recomms = new ZMsg();
+
+		String[] entityEls = linkedEntities.getString("subject").split(":");
 		if ( entityEls.length == 2 ) {
 			String etype = entityEls[0];
 			long eid = Long.parseLong(entityEls[1]);
@@ -107,7 +115,7 @@ protected ZMsg cmdRecommend(ZMsg msg) throws Exception {
 			sb.append("{}").append("\t");
 			sb.append("{\"reclen\":").append(Integer.toString(reclen)).append("}").append("\t");
 			sb.append("[");
-			List<RecommendedItem> reclist = recom.recommend(eid, reclen);
+			List<RecommendedItem> reclist = recommender.recommend(eid, reclen);
 			if ( reclist != null && reclist.size() > 0 ) {
 				int rank = 0;
 				for ( RecommendedItem item : reclist ) {
@@ -129,10 +137,13 @@ protected ZMsg cmdRecommend(ZMsg msg) throws Exception {
 			sb.append("]");
 			recomms.addString(sb.toString());
 		} else {
-				throw new Exception("Entity elements length <> 2, current length="+ entityEls.length);
+			throw new Exception("Entity elements length <> 2, current length="+ entityEls.length);
 		}
-	
-	return recomms;
-}
 
+		return recomms;
+	}
+
+	public String getAddress(String ipAddressToThisHost) {
+		return "tcp://" + ipAddressToThisHost + ":" + zeromqBindPort;
+	}
 }

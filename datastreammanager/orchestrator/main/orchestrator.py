@@ -114,10 +114,12 @@ class Orchestrator(object):
         logger.info("Successfully connected to computing environment, start feeding train data.")
 
         train_response = self.send_train(zookeeper_hostport=zookeeper_hostport)
+        recommendation_endpoint = train_response[1]
+        logger.info("Received recommendation endpoint " + str(recommendation_endpoint))
 
         # TODO DESTINATION FILE MUST BE PASSED FROM COMMAND LINE
         for reco_manager in self.reco_managers_by_name.itervalues():
-            reco_manager.start(orchestrator_ip)
+            reco_manager.start(orchestrator_ip, recommendation_endpoint)
 
         ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
         logger.info("Start sending test data to queue")
