@@ -61,7 +61,6 @@ class Orchestrator(object):
         else:
             raise Exception("Unexpected message received from computing environment." + str(train_response))
 
-
     def read_zookeeper_hostport(self):
         datastream_config = self.read_yaml_config(os.path.join(self.datastreammanager, "vagrant.yml"))
         datastream_ip_address = datastream_config['box']['ip_address']
@@ -99,7 +98,13 @@ class Orchestrator(object):
             raise Exception("Computing environment send message {0}, which is not READY.".format(message))
 
     def run(self):
-        zookeeper_hostport = self.read_zookeeper_hostport()
+
+        datastream_config = self.read_yaml_config(os.path.join(self.datastreammanager, "vagrant.yml"))
+        datastream_ip_address = datastream_config['box']['ip_address']
+        #TODO: properly handle orchestrator location
+        orchestrator_ip = datastream_ip_address
+        zookeeper_port = datastream_config['zookeeper']['port']
+        zookeeper_hostport = "{host}:{port}".format(host=datastream_ip_address, port=zookeeper_port)
 
         self.executor.start_datastream()
         self.executor.configure_datastream(self.num_concurrent_recommendation_managers, zookeeper_hostport)
@@ -112,7 +117,7 @@ class Orchestrator(object):
 
         # TODO DESTINATION FILE MUST BE PASSED FROM COMMAND LINE
         for reco_manager in self.reco_managers_by_name.itervalues():
-            reco_manager.start()
+            reco_manager.start(orchestrator_ip)
 
         ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
         logger.info("Start sending test data to queue")

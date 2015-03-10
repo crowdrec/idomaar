@@ -14,7 +14,7 @@ class LocalExecutor:
     def __init__(self, reco_engine_hostport, orchestrator_port, datastream_manager_working_dir, recommendation_timeout_millis):
         """
         :param reco_engine_hostport: host and port of the recommendation engine
-        :param orchestrator_port: used by the recommendation manager agent
+        :param orchestrator_port: used by the recommendation manager agents
         """
         self.recommendation_timeout_millis = recommendation_timeout_millis
         self.orchestrator_port = orchestrator_port
@@ -34,10 +34,11 @@ class LocalExecutor:
         if capture_output: return result
         else: return result[0]
 
-    def start_recommendation_manager(self, name):
+    def start_recommendation_manager(self, name, orchestrator_ip):
         """:param name: The name of the recommendation manager agent"""
         logger.info("Starting recommendation manager " + name)
-        recommendation_manager_start = ' '.join(["/vagrant/flume-config/startup/recommendation_manager-agent start", name, self.reco_engine_hostport, str(self.orchestrator_port), str(self.recommendation_timeout_millis)])
+        orchestrator_connection = "tcp://{ip_address}:{port}".format(ip_address=orchestrator_ip, port=self.orchestrator_port)
+        recommendation_manager_start = ' '.join(["/vagrant/flume-config/startup/recommendation_manager-agent start", name, self.reco_engine_hostport, orchestrator_connection, str(self.recommendation_timeout_millis)])
         self.run_on_data_stream_manager(recommendation_manager_start)
 
     def stop_recommendation_manager(self, name):

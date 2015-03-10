@@ -25,15 +25,15 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	private Socket orchestratorConnection;
 
 	private final String _hostname;
-	private final String orchestratorHostname;
+	private final String orchestratorHostport;
 	private final org.zeromq.ZMQ.Context zmqContext;
 	private final String recommendationAgentName;
 
 	private static String fieldSeparator = "\\t";
 
-	public IdomaarRecommendationInterceptor(String hostname, String orchestratorHostname, String recommendationAgentName, int timeoutMillis) {
+	public IdomaarRecommendationInterceptor(String hostname, String orchestratorHostport, String recommendationAgentName, int timeoutMillis) {
 		_hostname = hostname;
-		this.orchestratorHostname = orchestratorHostname;
+		this.orchestratorHostport = orchestratorHostport;
 		this.recommendationAgentName = recommendationAgentName;
 		zmqContext = ZMQ.context(1);
 		requester = zmqContext.socket(ZMQ.REQ);
@@ -45,8 +45,8 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	public void initialize() {
 		requester.connect(_hostname);
 		logger.info("Launched 0MQ client, bind to " + _hostname);
-		orchestratorConnection.connect(orchestratorHostname);
-		logger.info("Launched 0MQ client to connect to orchestrator, bind to " + orchestratorHostname);
+		orchestratorConnection.connect(orchestratorHostport);
+		logger.info("Launched 0MQ client to connect to orchestrator, bind to " + orchestratorHostport);
 	}
 
 	@Override
@@ -64,8 +64,10 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 				logger.info("Received end of recommendation file");
 				orchestratorConnection.sendMore("FINISHED");
 				orchestratorConnection.send(recommendationAgentName, ZMQ.NOBLOCK);
+				logger.info("Sent 'FINISHED' to orchestrator, waiting for reply ...");
                 ZMsg reply =  ZMsg.recvMsg(orchestratorConnection);
-                logger.info("Sent 'FINISHED' to orchestrator, received reply:" + reply.remove().toString());
+				logger.info("Received reply :" + reply.remove().toString());
+
 			} else {
 				logger.info("Requesting recommendation for event ["+body+"]");
 				if(parsedRequest.length < 5) {

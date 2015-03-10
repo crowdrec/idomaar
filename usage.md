@@ -3,6 +3,7 @@ Idomaar usage
 
 ##Installation
 * Install Vagrant from [https://www.vagrantup.com/](https://www.vagrantup.com/)
+* Use git to clone the idomaar repository (e.g. git clone https://github.com/crowdrec/idomaar)
 * Run `idomaar.sh -v` . This will instruct Vagrant to bring up the virtual machine included in idomaar, thus building it on your host.
 
 ##Demo
