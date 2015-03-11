@@ -131,7 +131,7 @@ class Orchestrator(object):
         ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
 
         test_message = ['TEST']
-        logger.warn("WAIT: sending message "+ ''.join(test_message) +" and wait for response")
+        logger.warn("WAIT: sending message " + ''.join(test_message) + " and wait for response")
 
         self.response_from_comp_env(request=test_message)
         logger.info("INFO: recommendations correctly generated, waiting for finished message from recommendation manager agents")
