@@ -31,49 +31,45 @@ public class RecommendationEngine implements Runnable {
 		recommendationSocketAddress = "tcp://" + zeromqBindAddress + ":" + zeromqBindPort;
 	}
 
-	@Override
-	public void run() {
-
-		ZMQ.Context context = ZMQ.context(1);
-		Socket recommendationSocket = context.socket(ZMQ.REP);
-
-		System.out.println("Creating recommendation ZMQ socket and binding to " + recommendationSocketAddress);
-		recommendationSocket.bind(recommendationSocketAddress);
-
-		while (!shutdown && !Thread.currentThread().isInterrupted()) {
-			//  Wait for next request from client
-
-			ZMsg recvMsg =  ZMsg.recvMsg(recommendationSocket);
-			System.out.println("Received request: ["+recvMsg+"].");
-
-			try {
-				String messageType = recvMsg.remove().toString();
-
-				if (messageType.equals("RECOMMEND")) {
-					ZMsg msg = cmdRecommend(recvMsg);
-					System.out.println("Sending recommendation result " + msg);
-					msg.send(recommendationSocket);
-				} else {
-					System.out.println("Unable to parse event " + messageType);
-					recommendationSocket.send("KO");
-				}
-			} catch (IOException e) {
-				shutdown = true;
-				e.printStackTrace();
-			} catch (TasteException e) {
-				// TODO ADD MESSAGE TO RESPONSE
-				e.printStackTrace();
-				recommendationSocket.send(e.toString());
-			} catch (Exception e) {
-				shutdown = true;
-				e.printStackTrace();
-			}
-
+	private ZMsg createResponse(ZMsg request) {
+		String messageType = request.remove().toString();
+		if (!messageType.equals("RECOMMEND")) {
+			System.out.println("Unable to parse event " + messageType);
+			return ZMsg.newStringMsg("KO");
 		}
-
+		try {
+			return cmdRecommend(request);
+		} catch (TasteException e) {
+			// TODO ADD MESSAGE TO RESPONSE
+			e.printStackTrace();
+			return ZMsg.newStringMsg(e.toString());
+		} catch (Exception e) {
+			shutdown = true;
+			e.printStackTrace();
+			return ZMsg.newStringMsg(e.toString());
+		}
 	}
 
-
+	@Override
+	public void run() {
+		ZMQ.Context context = ZMQ.context(1);
+		Socket recommendationSocket = context.socket(ZMQ.REP);
+		System.out.println("Creating recommendation ZMQ socket and binding to " + recommendationSocketAddress);
+		recommendationSocket.bind(recommendationSocketAddress);
+		while (!shutdown && !Thread.currentThread().isInterrupted()) {
+			ZMsg recommendationRequest =  ZMsg.recvMsg(recommendationSocket);
+			System.out.println("Received request: ["+recommendationRequest+"].");
+			ZMsg response = createResponse(recommendationRequest);
+			System.out.println("Sending response " + response);
+			try {
+				response.send(recommendationSocket);
+			}
+			catch (Exception exception) {
+				System.out.println("Exception occurred while sending response: " + exception.getMessage());
+				exception.printStackTrace();
+			}
+		}
+	}
 
 	public void stop() {
 		this.shutdown=true;
@@ -97,8 +93,6 @@ public class RecommendationEngine implements Runnable {
 
 		JsonReader reader_rel = Json.createReader(new StringReader(msg.remove().toString()));
 		JsonObject linkedEntities = reader_rel.readObject();
-
-
 
 		int reclen = properties.getInt("reclen");
 
