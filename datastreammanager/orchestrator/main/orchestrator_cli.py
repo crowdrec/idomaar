@@ -18,6 +18,7 @@ class OrchestratorCli(cli.Application):
         " The default assumption is that the orchestrator is running on the same (virtual) box as the datastream components (hence doesn't have to go via vagrant)." )
 
     comp_env = None
+    recommendation_target = 'fs:/tmp/recommendations'
 
     @cli.switch("--comp-env-dir", str)
     def get_comp_env(self, directory):
@@ -33,6 +34,12 @@ class OrchestratorCli(cli.Application):
     def get_test_uri(self, test_uri):
         """The location of the test data."""
         self.test_uri = test_uri
+
+    @cli.switch("--recommendation-target", str)
+    def get_recommendation_target(self, target):
+        """The location where recommendations are placed."""
+        self.recommendation_target = target
+
 
     def main(self):
         # TODO RECOMMENDATION HOSTNAME MUST BE EXTRACTED FROM MESSAGES
@@ -53,7 +60,8 @@ class OrchestratorCli(cli.Application):
             executor = LocalExecutor(reco_engine_hostport='192.168.22.100:5560', orchestrator_port=2761,
                                                datastream_manager_working_dir=datastreammanager, recommendation_timeout_millis=4000)
 
-        orchestrator = Orchestrator(executor=executor, datastreammanager = datastreammanager, training_uri = self.training_uri, test_uri = self.test_uri)
+        orchestrator = Orchestrator(executor=executor, datastreammanager = datastreammanager, training_uri = self.training_uri, test_uri = self.test_uri,
+                                    recommendation_target=self.recommendation_target)
         try:
             orchestrator.run()
         except Exception:

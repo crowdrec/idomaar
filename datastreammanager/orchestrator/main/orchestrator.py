@@ -12,7 +12,8 @@ from vagrant_executor import VagrantExecutor
 logger = logging.getLogger("orchestrator")
 
 class Orchestrator(object):
-    def __init__(self, executor, datastreammanager, training_uri, test_uri, port=2760):
+    def __init__(self, executor, datastreammanager, training_uri, test_uri, recommendation_target):
+        self.recommendation_target = recommendation_target
         self.executor = executor
         self.datastreammanager = datastreammanager
 
@@ -31,7 +32,7 @@ class Orchestrator(object):
         self.reco_managers_by_name = self.create_recommendation_managers(self.num_concurrent_recommendation_managers)
 
     def create_recommendation_managers(self, count):
-        return {"RM" + str(i): RecommendationManager("RM" + str(i), self.executor) for i in range(count)}
+        return {"RM" + str(i): RecommendationManager("RM" + str(i), self.executor, '/vagrant/flume-config/config') for i in range(count)}
 
     def read_yaml_config(self, file_name):
         with open(file_name, 'r') as input_file:
@@ -75,10 +76,11 @@ class Orchestrator(object):
         poller.register(self.comp_env_socket, zmq.POLLIN) # POLLIN for recv, POLLOUT for send
         logger.info("Sending request {0} to computing environment.".format(request))
         logger.info("Waiting {time} for computing environment to answer ...".format(time=str(timeout_millis / 1000) + " secs" if timeout_millis else "indefinitely"))
-        message = self.comp_env_socket.recv_multipart()
-        if not message:
+        poll_result = poller.poll(timeout_millis)
+        if not poll_result:
             self.comp_env_socket.close()
             raise TimeoutException("No answer from computing environment, probable timeout.")
+        message = self.comp_env_socket.recv_multipart()
         logger.info("Response from computing environment " + str(message))
         return message
 
@@ -117,7 +119,9 @@ class Orchestrator(object):
         recommendation_endpoint = train_response[1]
         logger.info("Received recommendation endpoint " + str(recommendation_endpoint))
 
-        # TODO DESTINATION FILE MUST BE PASSED FROM COMMAND LINE
+        manager = self.reco_managers_by_name.itervalues().next()
+        manager.create_configuration(self.recommendation_target)
+
         for reco_manager in self.reco_managers_by_name.itervalues():
             reco_manager.start(orchestrator_ip, recommendation_endpoint)
 
