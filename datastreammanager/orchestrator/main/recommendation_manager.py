@@ -1,5 +1,11 @@
 import logging
 import os
+try:
+    import pwd
+    import grp
+except ImportError:
+    print("No module pwd, grp. Probably running on Windows?")
+    #import winpwd as pwd
 
 logger = logging.getLogger("recommendation_manager")
 
@@ -35,13 +41,21 @@ class RecommendationManager:
         logger.info("Recommendation target type {0} location {1} ".format(type, location))
         if type == "fs":
             template_config_file = os.path.join(self.config_base_dir, 'kafka_recommendations-TO-fs.conf')
+        elif type == "hdfs":
+            template_config_file = os.path.join(self.config_base_dir, 'kafka_recommendations-TO-hdfs.conf')
 
         logger.info("Reading template config file " + str(template_config_file))
         with open(template_config_file) as input_file:
             config = input_file.readlines()
 
         if type == "fs":
+            if not os.path.exists(location):
+                logger.info("{0} doesn't exist, creating it and chown to flume".format(location))
+                os.makedirs(location)
+                os.chown(location, pwd.getpwnam("flume").pw_uid, grp.getgrnam("flume").gr_gid)
             config.append("a1.sinks.fs.sink.directory = " + location)
+        elif type == "hdfs":
+            config.append("a1.sinks.hdfs.hdfs.path = " + location)
 
         generated_config_dir = os.path.join(self.config_base_dir, 'generated')
         if not os.path.exists(generated_config_dir):
@@ -50,5 +64,3 @@ class RecommendationManager:
         logger.info("Writing generated config file to " + str(os.path.abspath(generated_config_file)))
         with open(generated_config_file,'w') as output_file:
             for line in config: output_file.write(line)
-
-

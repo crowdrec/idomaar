@@ -38,6 +38,7 @@ class OrchestratorCli(cli.Application):
     @cli.switch("--recommendation-target", str)
     def get_recommendation_target(self, target):
         """The location where recommendations are placed."""
+        if not (target.startswith('fs:') or target.startswith('hdfs:')): raise "Recommendation target must start with fs: or hdfs: to specify target type."
         self.recommendation_target = target
 
 
