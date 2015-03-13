@@ -136,10 +136,15 @@ public class ItembasedRec_batch {
 				orchestratorSocket.send(OUTMSG_OK, 0);
 				stop = true;
 			}
+			else if (command.streq("STOP")) {
+				System.out.println("Received STOP message, shutting down.");
+				orchestratorSocket.send("OK");
+				System.exit(0);
+			}
 			else {
 				System.out.println("ALGO: unknown command");
+				orchestratorSocket.send("UNKNOWN");
 			}
-
 		}
 		System.out.println("shutdown");
 	}

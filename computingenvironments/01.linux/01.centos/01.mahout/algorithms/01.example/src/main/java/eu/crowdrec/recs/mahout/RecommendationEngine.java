@@ -33,20 +33,25 @@ public class RecommendationEngine implements Runnable {
 
 	private ZMsg createResponse(ZMsg request) {
 		String messageType = request.remove().toString();
-		if (!messageType.equals("RECOMMEND")) {
+		if (messageType.equals("HELLO-RECOMMENDER-ENGINE")) {
+			return ZMsg.newStringMsg("HELLO THERE");
+		}
+		else if (messageType.equals("RECOMMEND")) {
+			try {
+				return cmdRecommend(request);
+			} catch (TasteException e) {
+				// TODO ADD MESSAGE TO RESPONSE
+				e.printStackTrace();
+				return ZMsg.newStringMsg(e.toString());
+			} catch (Exception e) {
+				shutdown = true;
+				e.printStackTrace();
+				return ZMsg.newStringMsg(e.toString());
+			}
+		}
+		else {
 			System.out.println("Unable to parse event " + messageType);
 			return ZMsg.newStringMsg("KO");
-		}
-		try {
-			return cmdRecommend(request);
-		} catch (TasteException e) {
-			// TODO ADD MESSAGE TO RESPONSE
-			e.printStackTrace();
-			return ZMsg.newStringMsg(e.toString());
-		} catch (Exception e) {
-			shutdown = true;
-			e.printStackTrace();
-			return ZMsg.newStringMsg(e.toString());
 		}
 	}
 
@@ -58,9 +63,9 @@ public class RecommendationEngine implements Runnable {
 		recommendationSocket.bind(recommendationSocketAddress);
 		while (!shutdown && !Thread.currentThread().isInterrupted()) {
 			ZMsg recommendationRequest =  ZMsg.recvMsg(recommendationSocket);
-			System.out.println("Received request: ["+recommendationRequest+"].");
+			System.out.println("Received recommendation request: ["+recommendationRequest+"].");
 			ZMsg response = createResponse(recommendationRequest);
-			System.out.println("Sending response " + response);
+			System.out.println("Sending recommendation response " + response);
 			try {
 				response.send(recommendationSocket);
 			}

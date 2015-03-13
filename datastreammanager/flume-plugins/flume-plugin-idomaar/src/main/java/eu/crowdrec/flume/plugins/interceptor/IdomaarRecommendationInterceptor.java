@@ -45,6 +45,11 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	public void initialize() {
 		requester.connect(recommendationEndpoint);
 		logger.info("Launched 0MQ client, bind to " + recommendationEndpoint);
+		logger.info("Sending HELLO-RECOMMENDER-ENGINE to recommender engine");
+		requester.send("HELLO-RECOMMENDER-ENGINE");
+		logger.info("Hello sent, waiting for answer");
+		ZMsg reply =  ZMsg.recvMsg(requester);
+		logger.info("Answer from recommender engine " + reply);
 		orchestratorConnection.connect(orchestratorHostport);
 		logger.info("Launched 0MQ client to connect to orchestrator, bind to " + orchestratorHostport);
 	}
@@ -76,7 +81,7 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 					requester.sendMore("RECOMMEND");
 					logger.info("Sending " + parsedRequest[3] + " to recommendation engine.");
 					requester.sendMore(parsedRequest[3]);
-					requester.send(parsedRequest[4], ZMQ.NOBLOCK);
+					requester.send(parsedRequest[4]);
 
 					ZMsg reply =  ZMsg.recvMsg(requester);
 					if (reply == null) {

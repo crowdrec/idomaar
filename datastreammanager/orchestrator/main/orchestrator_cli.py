@@ -25,6 +25,15 @@ class OrchestratorCli(cli.Application):
         """The relative path to the computing environment vagrant directory. This only makes sense if the orchestrator runs on the same host as the computing environment."""
         self.comp_env = directory
 
+    @cli.switch("--comp-env-address", str, mandatory=True, list=True)
+    def get_computing_environment_address(self, address):
+        """The URL of the computing environment, either tcp://hostname:port for ZMQ communication or http://hostname:port for HTTP communication.
+        If multiple addresses are given, only the last one is taken into account. This facilitates parameter overriding when called from shell scritps (that is,
+        parameter lists to be merged can simply be concatenated)."""
+        address_used = address[-1]
+        logger.info("{0} computing environment addresses given, using the last one {1}".format(len(address), address_used))
+        self.computing_environment_address = address_used
+
     @cli.switch("--training-uri", str, mandatory=True)
     def get_training_uri(self, training_uri):
         """The location of the training data."""
@@ -61,8 +70,8 @@ class OrchestratorCli(cli.Application):
             executor = LocalExecutor(reco_engine_hostport='192.168.22.100:5560', orchestrator_port=2761,
                                                datastream_manager_working_dir=datastreammanager, recommendation_timeout_millis=4000)
 
-        orchestrator = Orchestrator(executor=executor, datastreammanager = datastreammanager, training_uri = self.training_uri, test_uri = self.test_uri,
-                                    recommendation_target=self.recommendation_target)
+        orchestrator = Orchestrator(executor=executor, datastreammanager = datastreammanager, config = self)
+
         try:
             orchestrator.run()
         except Exception:
