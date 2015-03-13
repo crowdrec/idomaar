@@ -27,35 +27,45 @@ class RecommendationManager:
     def stop(self):
         self.executor.stop_recommendation_manager(self.name)
 
-    def create_configuration(self, recommendation_target):
+    def set_value(self, config, key, value):
+        config.append(key + '=' + value + '\n')
+
+    def create_configuration(self, recommendation_target, communication_protocol):
         """
         :param recommendation_target: The target where recommendation results are written.
+        :param communication_protocol: tcp or http
         Possible prefixes are fs:, s3:, hdfs: .
         Use fs: to write to a directory of the local filesystem, for instance fs:/tmp/recommendations will instruct the agent
         to write recommendations to the /tmp/recommendations directory on the local filesystem.
         :return:
         """
         parts = recommendation_target.split(':', 1)
-        type = parts[0]
+        target_type = parts[0]
         location = parts[1]
-        logger.info("Recommendation target type {0} location {1} ".format(type, location))
-        if type == "fs":
+        logger.info("Recommendation target type {0} location {1}; creating config with communication protocol {2}".format(target_type, location, communication_protocol))
+        if target_type == "fs":
             template_config_file = os.path.join(self.config_base_dir, 'kafka_recommendations-TO-fs.conf')
-        elif type == "hdfs":
+        elif target_type == "hdfs":
             template_config_file = os.path.join(self.config_base_dir, 'kafka_recommendations-TO-hdfs.conf')
 
         logger.info("Reading template config file " + str(template_config_file))
         with open(template_config_file) as input_file:
             config = input_file.readlines()
 
-        if type == "fs":
+        if target_type == "fs":
             if not os.path.exists(location):
                 logger.info("{0} doesn't exist, creating it and chown to flume".format(location))
                 os.makedirs(location)
                 os.chown(location, pwd.getpwnam("flume").pw_uid, grp.getgrnam("flume").gr_gid)
-            config.append("a1.sinks.fs.sink.directory = " + location)
-        elif type == "hdfs":
-            config.append("a1.sinks.hdfs.hdfs.path = " + location)
+            self.set_value(config, "a1.sinks.fs.sink.directory", location)
+        elif target_type == "hdfs":
+            self.set_value(config, "a1.sinks.hdfs.hdfs.path", location)
+
+        if communication_protocol == 'tcp':
+            self.set_value(config, 'a1.sources.r1.interceptors.i1.type', 'eu.crowdrec.flume.plugins.interceptor.IdomaarRecommendationInterceptor$Builder')
+        elif communication_protocol == 'http':
+            self.set_value(config, 'a1.sources.r1.interceptors.i1.type', 'eu.crowdrec.flume.plugins.interceptor.IdomaarHTTPRecommendationInterceptor$Builder')
+        else: raise "Recommendation manager communication protocol must be either tcp or http."
 
         generated_config_dir = os.path.join(self.config_base_dir, 'generated')
         if not os.path.exists(generated_config_dir):

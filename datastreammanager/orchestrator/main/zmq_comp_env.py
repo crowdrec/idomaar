@@ -8,6 +8,8 @@ logger = logging.getLogger("computing-environment-zmq")
 class ZmqComputingEnvironmentProxy:
     """A class capable of communicating with a computing environment over ZMQ."""
 
+    communication_protocol = "tcp"
+
     def __init__(self, address):
         self.address = address
         self.context = zmq.Context()

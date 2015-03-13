@@ -8,6 +8,8 @@ logger = logging.getLogger("computing-environment-http")
 class HttpComputingEnvironmentProxy:
     """A class capable of communicating with a computing environment over HTTP."""
 
+    communication_protocol = "http"
+
     def __init__(self, address):
         self.address = address
 

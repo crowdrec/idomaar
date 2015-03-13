@@ -95,7 +95,7 @@ class Orchestrator(object):
         self.executor.run_on_data_stream_manager(test_data_feed_command)
 
         manager = self.reco_managers_by_name.itervalues().next()
-        manager.create_configuration(self.recommendation_target)
+        manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol)
         for reco_manager in self.reco_managers_by_name.itervalues():
             reco_manager.start(orchestrator_ip, recommendation_endpoint)
 
