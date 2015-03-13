@@ -26,6 +26,7 @@ class ZmqComputingEnvironmentProxy:
             raise Exception("No answer from computing environment, probable timeout. Computing environment failed or didn't start in {secs} seconds.".format(secs=timeout_secs))
         if message[0] != 'READY':
             raise Exception("Computing environment send message {0}, which is not READY.".format(message))
+        else: logger.info("Successfully connected to computing environment.")
 
     def send_train(self, zookeeper_hostport, kafka_topic):
         # Pass to the orchestrator the zookeeper address and the name of the topics

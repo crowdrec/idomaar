@@ -1,19 +1,20 @@
 import  zmq
+import datetime
 import  os
-import sys
 import logging
-import colorlog
 import yaml
+from generated_flume_config import FlumeConfig
 from http_comp_env import HttpComputingEnvironmentProxy
-from orchestrator_exceptions import TimeoutException
 from recommendation_manager import RecommendationManager
 from util import timed_exec
-from vagrant_executor import VagrantExecutor
 from zmq_comp_env import ZmqComputingEnvironmentProxy
 
 logger = logging.getLogger("orchestrator")
 
 class Orchestrator(object):
+
+    flume_config_base_dir = '/vagrant/flume-config/config'
+
     def __init__(self, executor, datastreammanager, config):
         self.config = config
         self.recommendation_target = config.recommendation_target
@@ -36,7 +37,7 @@ class Orchestrator(object):
         self.reco_managers_by_name = self.create_recommendation_managers(self.num_concurrent_recommendation_managers)
 
     def create_recommendation_managers(self, count):
-        return {"RM" + str(i): RecommendationManager("RM" + str(i), self.executor, '/vagrant/flume-config/config') for i in range(count)}
+        return {"RM" + str(i): RecommendationManager("RM" + str(i), self.executor, self.flume_config_base_dir) for i in range(count)}
 
     def read_yaml_config(self, file_name):
         with open(file_name, 'r') as input_file:
@@ -46,13 +47,8 @@ class Orchestrator(object):
         """ Tell the computing environment to start reading training data from the kafka queue
             Instructs the flume agent on the datastreammanager vm to start streaming training data. Then sends a TRAIN message to the computing environment, and
             wait until training is complete."""
-
-        logger.info("DO: starting data reader for training data uri=[" + str(self.training_uri) + "]")
-        flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=' + self.training_uri + ' -Didomaar.sourceType=file'
-        self.executor.run_on_data_stream_manager(flume_command)
-
         logger.info("Sending TRAIN message to computing environment and waiting for training to be ready ...")
-        train_response, took_mins = timed_exec(lambda: self.comp_env_proxy.send_train(zookeeper_hostport=zookeeper_hostport, kafka_topic="data"))
+        train_response, took_mins = timed_exec(lambda: self.comp_env_proxy.send_train(zookeeper_hostport=zookeeper_hostport, kafka_topic=self.config.data_topic))
         if train_response[0] == 'OK':
             logger.info("Training completed successfully, took {0} minutes.".format(took_mins))
             recommendation_endpoint = train_response[1]
@@ -69,7 +65,34 @@ class Orchestrator(object):
         zookeeper_hostport = "{host}:{port}".format(host=datastream_ip_address, port=zookeeper_port)
         return zookeeper_hostport
 
+    def create_topic_names(self):
+        if self.config.new_topic:
+            now = datetime.datetime.now()
+            suffix = "{mo}{d}-{h}{mi}{sec}".format(y=now.year,mo=now.month,d=now.day,h=now.hour,mi=now.minute,sec=now.second)
+            self.config.data_topic = "data-" + suffix
+            self.config.recommendations_topic = "recommendations-" + suffix
+        logger.info("Using Kafka topic names: {0} for data, {1} for recommendations".format(self.config.data_topic, self.config.recommendations_topic))
+
+    def feed_training_data(self):
+        logger.info("Start feeding training data, data reader for training data uri=[" + str(self.training_uri) + "]")
+        flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka.conf -Didomaar.url=' + self.training_uri + ' -Didomaar.sourceType=file'
+        self.executor.run_on_data_stream_manager(flume_command)
+
+    def feed_test_data(self):
+        logger.info("Start feeding test data to queue")
+        ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
+        test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka.conf -Didomaar.url=" + self.test_uri + " -Didomaar.sourceType=file"
+        self.executor.run_on_data_stream_manager(test_data_feed_command)
+
+    def create_flume_config(self):
+        config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name='idomaar-TO-kafka.conf')
+        config.set_value('a1.sinks.kafka_data.topic', self.config.data_topic)
+        config.set_value('a1.sinks.kafka_rec.topic', self.config.recommendations_topic)
+        config.generate()
+
     def run(self):
+        self.create_topic_names()
+
         datastream_config = self.read_yaml_config(os.path.join(self.datastreammanager, "vagrant.yml"))
         datastream_ip_address = datastream_config['box']['ip_address']
         #TODO: properly handle orchestrator location
@@ -78,24 +101,19 @@ class Orchestrator(object):
         zookeeper_hostport = "{host}:{port}".format(host=datastream_ip_address, port=zookeeper_port)
 
         self.executor.start_datastream()
-        self.executor.configure_datastream(self.num_concurrent_recommendation_managers, zookeeper_hostport)
+        self.executor.configure_datastream(self.num_concurrent_recommendation_managers, zookeeper_hostport, config=self.config)
         self.executor.start_computing_environment()
-
         self.comp_env_proxy.connect(timeout_secs=20)
 
-        logger.info("Successfully connected to computing environment, start feeding train data.")
-
+        self.create_flume_config()
+        self.feed_training_data()
         recommendation_endpoint = self.send_train(zookeeper_hostport=zookeeper_hostport)
         logger.info("Received recommendation endpoint " + str(recommendation_endpoint))
 
-        ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
-        logger.info("Start sending test data to queue")
-
-        test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + self.test_uri + " -Didomaar.sourceType=file"
-        self.executor.run_on_data_stream_manager(test_data_feed_command)
+        self.feed_test_data()
 
         manager = self.reco_managers_by_name.itervalues().next()
-        manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol)
+        manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol, recommendations_topic=self.config.recommendations_topic)
         for reco_manager in self.reco_managers_by_name.itervalues():
             reco_manager.start(orchestrator_ip, recommendation_endpoint)
 
@@ -118,6 +136,9 @@ class Orchestrator(object):
                 logger.error("Received FINISHED message from a recommendation manager named " + reco_manager_name + " but no record of this manager is found.")
 
         ## TODO RECEIVE SOME STATISTICS FROM THE COMPUTING ENVIRONMENT
+
+        # TODO: check if data stream channel is empty (http metrics)
+        # TODO: test/evaluate the output
 
         self.comp_env_proxy.send_stop()
         self.close()

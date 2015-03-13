@@ -14,11 +14,15 @@ class OrchestratorCli(cli.Application):
     PROGNAME = "orchestrator"
     VERSION = "0.0.1"
 
-    host_orchestrator = cli.Flag(["host-orchestrator"], help = "If given, the orchestrator assumes to be running on the host OS, and execute all datastream commands via vagrant."+
+    host_orchestrator = cli.Flag(["--host-orchestrator"], help = "If given, the orchestrator assumes to be running on the host OS, and execute all datastream commands via vagrant."+
         " The default assumption is that the orchestrator is running on the same (virtual) box as the datastream components (hence doesn't have to go via vagrant)." )
+
+    new_topic = cli.Flag(["--new-topic"], help = "If given, new Kafka topics will be created for data and recommendations feeds.", excludes = ['--data-topic', '--recommendations-topic'] )
 
     comp_env = None
     recommendation_target = 'fs:/tmp/recommendations'
+    data_topic = 'data'
+    recommendations_topic = 'recommendations'
 
     @cli.switch("--comp-env-dir", str)
     def get_comp_env(self, directory):
@@ -50,6 +54,16 @@ class OrchestratorCli(cli.Application):
         if not (target.startswith('fs:') or target.startswith('hdfs:')): raise "Recommendation target must start with fs: or hdfs: to specify target type."
         self.recommendation_target = target
 
+    @cli.switch("--data-topic", str)
+    def get_data_topic(self, topic):
+        """The Kafka topic where train and test data is fed."""
+        self.data_topic = topic
+
+    @cli.switch("--recommendations-topic", str)
+    def get_recommendation_topic(self, topic):
+        """The Kafka topic where recommendations are fed."""
+        self.recommendations_topic = topic
+
 
     def main(self):
         # TODO RECOMMENDATION HOSTNAME MUST BE EXTRACTED FROM MESSAGES
@@ -77,12 +91,6 @@ class OrchestratorCli(cli.Application):
         except Exception:
             logger.exception("Exception occurred, hard shutdown.")
             os._exit(-1)
-
-        # TODO: check if data stream channel is empty (http metrics)
-        # TODO: test/evaluate the output
-
-        #logger.info("DO: Stopping computing environment")
-        #orchestrator.executor.stop(working_dir=orchestrator.computing_env, subprocess_logger=computing_environment_logger)
 
         logger.info("Finished.")
 

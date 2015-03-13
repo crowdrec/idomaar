@@ -30,7 +30,7 @@ class RecommendationManager:
     def set_value(self, config, key, value):
         config.append(key + '=' + value + '\n')
 
-    def create_configuration(self, recommendation_target, communication_protocol):
+    def create_configuration(self, recommendation_target, communication_protocol, recommendations_topic):
         """
         :param recommendation_target: The target where recommendation results are written.
         :param communication_protocol: tcp or http
@@ -66,6 +66,8 @@ class RecommendationManager:
         elif communication_protocol == 'http':
             self.set_value(config, 'a1.sources.r1.interceptors.i1.type', 'eu.crowdrec.flume.plugins.interceptor.IdomaarHTTPRecommendationInterceptor$Builder')
         else: raise "Recommendation manager communication protocol must be either tcp or http."
+
+        self.set_value(config, 'a1.sources.r1.topic', recommendations_topic)
 
         generated_config_dir = os.path.join(self.config_base_dir, 'generated')
         if not os.path.exists(generated_config_dir):

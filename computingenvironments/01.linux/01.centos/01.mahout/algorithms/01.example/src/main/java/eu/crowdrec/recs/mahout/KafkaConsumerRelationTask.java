@@ -34,9 +34,9 @@ import kafka.consumer.KafkaStream;
 				        System.out.println("Received EOF, read " + lines + " messages ");
 				        shutdown = true;
 					}
-//					else {
-//						System.out.println(new String(message, "UTF-8"));
-//					}
+					else {
+						System.out.println(new String(message, "UTF-8"));
+					}
 					
 					
 				} catch (NumberFormatException e) {
