@@ -74,10 +74,10 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 				logger.info("Received reply :" + reply.remove().toString());
 
 			} else {
-				logger.info("Requesting recommendation for event ["+body+"]");
 				if(parsedRequest.length < 5) {
 					logger.error("Received wrong data format for event ["+body+"]");
 				} else {
+					logger.info("Requesting recommendation for event ["+body+"]");
 					requester.sendMore("RECOMMEND");
 					logger.info("Sending " + parsedRequest[3] + " to recommendation engine.");
 					requester.sendMore(parsedRequest[3]);
@@ -94,10 +94,7 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 					}
 					else {
 						logger.info("Received recommendation [" + reply + "]");
-
 						String response = body + fieldSeparator + reply.remove().toString();
-
-
 						// TODO PARSING RESPONSE AND ADD IT TO RESULT
 						event.setBody(response.getBytes(Charset.forName("UTF-8")));
 					}

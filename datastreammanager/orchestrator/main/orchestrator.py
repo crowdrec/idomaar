@@ -3,6 +3,7 @@ import datetime
 import  os
 import logging
 import yaml
+import time
 from generated_flume_config import FlumeConfig
 from http_comp_env import HttpComputingEnvironmentProxy
 from recommendation_manager import RecommendationManager
@@ -74,18 +75,20 @@ class Orchestrator(object):
         logger.info("Using Kafka topic names: {0} for data, {1} for recommendations".format(self.config.data_topic, self.config.recommendations_topic))
 
     def feed_training_data(self):
+        self.create_flume_config('idomaar-TO-kafka-train.conf')
         logger.info("Start feeding training data, data reader for training data uri=[" + str(self.training_uri) + "]")
-        flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka.conf -Didomaar.url=' + self.training_uri + ' -Didomaar.sourceType=file'
+        flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-train.conf -Didomaar.url=' + self.training_uri + ' -Didomaar.sourceType=file'
         self.executor.run_on_data_stream_manager(flume_command)
 
     def feed_test_data(self):
+        self.create_flume_config('idomaar-TO-kafka-test.conf')
         logger.info("Start feeding test data to queue")
         ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
-        test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka.conf -Didomaar.url=" + self.test_uri + " -Didomaar.sourceType=file"
+        test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.test_uri + " -Didomaar.sourceType=file"
         self.executor.run_on_data_stream_manager(test_data_feed_command)
 
-    def create_flume_config(self):
-        config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name='idomaar-TO-kafka.conf')
+    def create_flume_config(self, template_file_name):
+        config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name=template_file_name)
         config.set_value('a1.sinks.kafka_data.topic', self.config.data_topic)
         config.set_value('a1.sinks.kafka_rec.topic', self.config.recommendations_topic)
         config.generate()
@@ -105,7 +108,7 @@ class Orchestrator(object):
         self.executor.start_computing_environment()
         self.comp_env_proxy.connect(timeout_secs=20)
 
-        self.create_flume_config()
+
         self.feed_training_data()
         recommendation_endpoint = self.send_train(zookeeper_hostport=zookeeper_hostport)
         logger.info("Received recommendation endpoint " + str(recommendation_endpoint))
@@ -130,8 +133,11 @@ class Orchestrator(object):
             reco_manager_name = reco_manager_message[1] if len(reco_manager_message) > 1 else ""
             reco_manager = self.reco_managers_by_name.get(reco_manager_name)
             if reco_manager is not None:
-                logger.info("Recommendation manager " + reco_manager_name + "has finished processing recommendation queue, shutting all managers down.")
-                for manager in self.reco_managers_by_name.itervalues(): reco_manager.stop()
+                logger.info("Recommendation manager " + reco_manager_name + "has finished processing recommendation queue.")
+                logger.warn("Waiting 20 secs to work around Flume issue FLUME-1318.")
+                time.sleep(20)
+                logger.info("Shutting all managers down ...")
+                for manager in self.reco_managers_by_name.itervalues(): manager.stop()
             else:
                 logger.error("Received FINISHED message from a recommendation manager named " + reco_manager_name + " but no record of this manager is found.")
 
