@@ -6,6 +6,8 @@ cd $BASEDIR/computingenvironments/$DEMO_COMPUTING_ENV
 echo "Working directory is" `pwd`
 echo "Bringing up demo computing environment $DEMO_COMPUTING_ENV"
 vagrant up
+echo "Starting recommender engine ..."
+vagrant ssh -c 'sudo /vagrant/algorithms/01.example/itembasedrec.sh start'
 cd $BASEDIR
 echo "Working directory is" `pwd`
 echo "Launching idomaar ..."
