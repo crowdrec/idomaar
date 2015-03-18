@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import colorlog
@@ -23,6 +24,14 @@ class OrchestratorCli(cli.Application):
     recommendation_target = 'fs:/tmp/recommendations'
     data_topic = 'data'
     recommendations_topic = 'recommendations'
+    config_file = 'default-config.json'
+
+    #Configuration parameters from JSON config file
+
+    #Number of threads requesting recommendations
+    recommendation_request_thread_count = 1
+    #Messages per sec sent to the computing environment. 0 means no limit
+    messages_per_sec = 0
 
     @cli.switch("--comp-env-dir", str)
     def get_comp_env(self, directory):
@@ -37,6 +46,11 @@ class OrchestratorCli(cli.Application):
         address_used = address[-1]
         logger.info("{0} computing environment addresses given, using the last one {1}".format(len(address), address_used))
         self.computing_environment_address = address_used
+
+    @cli.switch("--config-file", str)
+    def get_config_file(self, config_file):
+        """Orchestrator configuration file, defaults to default-config.json"""
+        self.config_file = config_file
 
     @cli.switch("--training-uri", str, mandatory=True)
     def get_training_uri(self, training_uri):
@@ -73,6 +87,14 @@ class OrchestratorCli(cli.Application):
         basedir = os.path.abspath("../../")
         logger.info("Idomaar base path: %s" % basedir)
 
+        config_file_location = os.path.join('/vagrant', self.config_file)
+        with open(config_file_location) as input_file:
+            config_json=input_file.read()
+        config_data = json.loads(config_json)
+        logger.info("Configuration loaded from file {0} : {1}".format(config_file_location, config_data))
+        if 'recommendation_request_thread_count' in config_data: self.recommendation_request_thread_count = config_data['recommendation_request_thread_count']
+        if 'messages_per_sec' in config_data: self.messages_per_sec = config_data['messages_per_sec']
+
         if self.host_orchestrator:
             datastreammanager = os.path.join(basedir, "datastreammanager")
             computing_env_dir = os.path.join(basedir, "computingenvironments")
@@ -84,7 +106,7 @@ class OrchestratorCli(cli.Application):
             executor = LocalExecutor(reco_engine_hostport='192.168.22.100:5560', orchestrator_port=2761,
                                                datastream_manager_working_dir=datastreammanager, recommendation_timeout_millis=4000)
 
-        orchestrator = Orchestrator(executor=executor, datastreammanager = datastreammanager, config = self)
+        orchestrator = Orchestrator(executor=executor, datastreammanager=datastreammanager, config=self)
 
         try:
             orchestrator.run()

@@ -32,10 +32,7 @@ class Orchestrator(object):
         self.reco_manager_socket = zmq.Context().socket(zmq.REP)
         self.reco_manager_socket.bind('tcp://*:%s' % self.executor.orchestrator_port)
 
-        # TODO Number of (concurrently running) recommendation managers should be configured externally, see issue #40
-        self.num_concurrent_recommendation_managers = 1
-
-        self.reco_managers_by_name = self.create_recommendation_managers(self.num_concurrent_recommendation_managers)
+        self.reco_managers_by_name = self.create_recommendation_managers(self.config.recommendation_request_thread_count)
 
     def create_recommendation_managers(self, count):
         return {"RM" + str(i): RecommendationManager("RM" + str(i), self.executor, self.flume_config_base_dir) for i in range(count)}
@@ -104,7 +101,7 @@ class Orchestrator(object):
         zookeeper_hostport = "{host}:{port}".format(host=datastream_ip_address, port=zookeeper_port)
 
         self.executor.start_datastream()
-        self.executor.configure_datastream(self.num_concurrent_recommendation_managers, zookeeper_hostport, config=self.config)
+        self.executor.configure_datastream(self.config.recommendation_request_thread_count, zookeeper_hostport, config=self.config)
         self.executor.start_computing_environment()
         self.comp_env_proxy.connect(timeout_secs=20)
 
