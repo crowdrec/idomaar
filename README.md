@@ -12,3 +12,4 @@ The evaluation logic is implemented by an *orchestrator* and an *evaluator*.
 Algorithms, evaluation logic, and data will be as decoupled as possible to allow to experiment with most existing solutions - no matter the technology they are implemented on - granting reproducible and consistent comparisons.
 The data are contained in the *data container*
 
+See [usage.md](usage.md) for installation instructions and usage.

@@ -14,7 +14,7 @@ class LocalExecutor:
     def __init__(self, reco_engine_hostport, orchestrator_port, datastream_manager_working_dir, recommendation_timeout_millis):
         """
         :param reco_engine_hostport: host and port of the recommendation engine
-        :param orchestrator_port: used by the recommendation manager agent
+        :param orchestrator_port: used by the recommendation manager agents
         """
         self.recommendation_timeout_millis = recommendation_timeout_millis
         self.orchestrator_port = orchestrator_port
@@ -34,10 +34,11 @@ class LocalExecutor:
         if capture_output: return result
         else: return result[0]
 
-    def start_recommendation_manager(self, name):
+    def start_recommendation_manager(self, name, orchestrator_ip, recommendation_endpoint):
         """:param name: The name of the recommendation manager agent"""
         logger.info("Starting recommendation manager " + name)
-        recommendation_manager_start = ' '.join(["/vagrant/flume-config/startup/recommendation_manager-agent start", name, self.reco_engine_hostport, str(self.orchestrator_port), str(self.recommendation_timeout_millis)])
+        orchestrator_connection = "tcp://{ip_address}:{port}".format(ip_address=orchestrator_ip, port=self.orchestrator_port)
+        recommendation_manager_start = ' '.join(["/vagrant/flume-config/startup/recommendation_manager-agent start", name, recommendation_endpoint, orchestrator_connection, str(self.recommendation_timeout_millis)])
         self.run_on_data_stream_manager(recommendation_manager_start)
 
     def stop_recommendation_manager(self, name):
@@ -77,19 +78,27 @@ class LocalExecutor:
         logger.warn("Cannot start computing environment from datastream vm, it must be started externally.")
 
 
-    def configure_datastream(self, recommendation_partitions, zookeeper_hostport):
+    def configure_datastream(self, recommendation_partitions, zookeeper_hostport, config):
         """
         Configure the datastream vm for the upcoming task:
+         * Create new topics if necessary
          * Increase the number of kafka topics, if necessary
         """
+        if config.new_topic:
+            topic_create_template = "/opt/apache/kafka/bin/kafka-topics.sh --zookeeper {zookeeper} --create --topic {topic} --partitions 1 --replication-factor 1"
+            logger.info("Creating data topic ...")
+            self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.data_topic), exit_on_failure=True, capture_output=True)
+            logger.info("Creating recommendation topic ...")
+            self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.recommendations_topic), exit_on_failure=True, capture_output=True)
+
         topic_info = "/opt/apache/kafka/bin/kafka-topics.sh --zookeeper {zookeeper} --topic recommendations --describe".format(zookeeper=zookeeper_hostport)
         result = self.run_on_data_stream_manager(topic_info, exit_on_failure=False, capture_output=True)
         num_partitions = len([str(line) for line in result if "Partition: " in str(line)])
         logger.info("Detected number of partitions for 'recommendations' topic: " + str(num_partitions))
         if recommendation_partitions > num_partitions:
             logger.info("Setting the number of partitions of 'recommendation' topic to at least " + str(recommendation_partitions))
-            topic_set = "/opt/apache/kafka/bin/kafka-topics.sh --alter --zookeeper {zookeeper_hostport} --topic recommendations --partitions {partitions} ".\
-                            format(zookeeper_hostport=zookeeper_hostport, partitions=recommendation_partitions)
+            topic_set = "/opt/apache/kafka/bin/kafka-topics.sh --alter --zookeeper {zookeeper_hostport} --topic {recommendations} --partitions {partitions} ".\
+                            format(zookeeper_hostport=zookeeper_hostport, partitions=recommendation_partitions, recommendations=config.recommendations_topic)
             self.run_on_data_stream_manager(topic_set)
         else: logger.info("Required num partitions " + str(recommendation_partitions) + ", so leaving it as it is.")
 

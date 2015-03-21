@@ -33,7 +33,8 @@ import kafka.consumer.KafkaStream;
 					if(isEof) {
 				        System.out.println("Received EOF, read " + lines + " messages ");
 				        shutdown = true;
-					} else {
+					}
+					else {
 						System.out.println(new String(message, "UTF-8"));
 					}
 					

@@ -32,17 +32,13 @@ public class ItembasedRec_batch {
 	
 	private String stagedir = null;
 	private Socket orchestratorSocket = null;
-	private Socket recommendationSocket = null;
-	
-	private static String zeromqBindAddress = "0.0.0.0";
-	private static String zeromqBindPort = "5560";
-	
+	private String ipAddressToThisHost;
+
 	private String zookeeper_url;
 	private String topic;
 	
 	KafkaConsumer k_relations;
 	
-	private RecommendationEngine recommendationEngine = null;
 	/**
 	 *
 	 * @param args
@@ -62,27 +58,15 @@ public class ItembasedRec_batch {
 		String tmpOutDir = args[0];
 		String comm = args[1];
 
+		String ipAddressToThisHost = args[2];
+
 		Context context = ZMQ.context(1);
 		System.out.println("ZMQ creating server socket, binding to " + comm + " to receive messages from orchestrator... ");
 		Socket orchestratorSocket = context.socket(ZMQ.REP);
 		orchestratorSocket.bind(comm);
-//		System.out.println("ZMQ created context");
-//		orchestratorSocket.setReceiveTimeOut(10000);
-//		System.out.println("ZMQ setting timeout");
-//		System.out.println("ZMQ connecting to socket");
-//		orchestratorSocket.connect(comm);
 
-//		System.out.println("ZMQ connected to socket");
-
-		Socket recommendationSocket = context.socket(ZMQ.REP);
-		String recommendationSocketAddress = getZeromqBindAddress();
-
-		System.out.println("Creating recommendation ZMQ socket and binding to " + recommendationSocketAddress);
-		recommendationSocket.bind(recommendationSocketAddress);
-		
-		
 		while(true) {
-			ItembasedRec_batch ubr = new ItembasedRec_batch(tmpOutDir, orchestratorSocket, recommendationSocket);
+			ItembasedRec_batch ubr = new ItembasedRec_batch(tmpOutDir, orchestratorSocket, ipAddressToThisHost);
 			ubr.run();
 		}
 		
@@ -90,29 +74,18 @@ public class ItembasedRec_batch {
 		//socket_res.close();
 		//context.term();
 	}
-	
-	private static String getZeromqBindAddress() {
-		return "tcp://" + zeromqBindAddress + ":" + zeromqBindPort;
-	}
 
-	public ItembasedRec_batch(String stagedir, Socket orchestratorSocket, Socket recommendationSocket) throws IOException {
+	public ItembasedRec_batch(String stagedir, Socket orchestratorSocket, String ipAddressToThisHost) throws IOException {
 		this.stagedir = stagedir;
 		this.orchestratorSocket = orchestratorSocket;
-		this.recommendationSocket = recommendationSocket;
+		this.ipAddressToThisHost = ipAddressToThisHost;
 		dataModel = new InternalDataModel(stagedir, TMP_MAHOUT_USERRATINGS_FILENAME);
 		System.out.println("machine started");
 	}
 
 	public void run() throws IOException, TasteException {
 		System.out.println("Computing environment running ...");
-		Recommender recommender = null;
 		boolean stop = false;
-
-//		System.out.println("ALGO: sending READY message");
-//		orchestratorSocket.send(OUTMSG_READY, 0);
-
-//		ZMsg initialReqeuest =  ZMsg.recvMsg(orchestratorSocket);
-//		System.out.println("Received request: ["+recvMsg+"].");
 
 		while ( !stop ) {
 			ZMsg recvMsg = null;
@@ -132,16 +105,16 @@ public class ItembasedRec_batch {
 				boolean success = cmdReadinput(recvMsg);
 
 				if(success) {
-					recommender = createRecommender(stagedir + File.separator + TMP_MAHOUT_USERRATINGS_FILENAME);
+					Recommender recommender = createRecommender(stagedir + File.separator + TMP_MAHOUT_USERRATINGS_FILENAME);
 					System.out.println("ALGO: recommender created");
 
-					startRecommendationServer(recommender);
-					System.out.println("ALGO: Started recommendation engine, zeromq bind to " + getZeromqBindAddress());
+					RecommendationEngine recommendationEngine = startRecommendationServer(recommender);
+					String recommendationEndpoint = recommendationEngine.getAddress(ipAddressToThisHost);
+					System.out.println("ALGO: Started recommendation engine, zeromq last endpoint to " + recommendationEndpoint);
 
 					orchestratorSocket.sendMore(OUTMSG_OK);
-					orchestratorSocket.sendMore(zeromqBindAddress);
-					orchestratorSocket.send(zeromqBindPort);
-					
+					orchestratorSocket.send(recommendationEndpoint);
+
 				} else {
 					orchestratorSocket.send(OUTMSG_KO);
 					System.out.println("ALGO: error in receiving input");
@@ -163,10 +136,15 @@ public class ItembasedRec_batch {
 				orchestratorSocket.send(OUTMSG_OK, 0);
 				stop = true;
 			}
+			else if (command.streq("STOP")) {
+				System.out.println("Received STOP message, shutting down.");
+				orchestratorSocket.send("OK");
+				System.exit(0);
+			}
 			else {
 				System.out.println("ALGO: unknown command");
+				orchestratorSocket.send("UNKNOWN");
 			}
-
 		}
 		System.out.println("shutdown");
 	}
@@ -194,11 +172,10 @@ public class ItembasedRec_batch {
 		
 	}
 	
-	protected void startRecommendationServer(Recommender recommender) {
-		recommendationEngine = new RecommendationEngine(recommendationSocket, recommender);
-		
-		 Thread t = new Thread(recommendationEngine);
-	     t.start();
+	protected RecommendationEngine startRecommendationServer(Recommender recommender) {
+		RecommendationEngine recommendationEngine = new RecommendationEngine(recommender);
+		new Thread(recommendationEngine).start();
+		return recommendationEngine;
 	}
 
 	private Recommender createRecommender(String filename) throws IOException, TasteException{

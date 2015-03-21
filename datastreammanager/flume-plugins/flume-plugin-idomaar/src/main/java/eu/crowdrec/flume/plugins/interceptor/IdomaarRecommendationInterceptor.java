@@ -24,16 +24,16 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	private Socket requester;
 	private Socket orchestratorConnection;
 
-	private final String _hostname;
-	private final String orchestratorHostname;
+	private final String recommendationEndpoint;
+	private final String orchestratorHostport;
 	private final org.zeromq.ZMQ.Context zmqContext;
 	private final String recommendationAgentName;
 
 	private static String fieldSeparator = "\\t";
 
-	public IdomaarRecommendationInterceptor(String hostname, String orchestratorHostname, String recommendationAgentName, int timeoutMillis) {
-		_hostname = hostname;
-		this.orchestratorHostname = orchestratorHostname;
+	public IdomaarRecommendationInterceptor(String recommendationEndpoint, String orchestratorHostport, String recommendationAgentName, int timeoutMillis) {
+		this.recommendationEndpoint = recommendationEndpoint;
+		this.orchestratorHostport = orchestratorHostport;
 		this.recommendationAgentName = recommendationAgentName;
 		zmqContext = ZMQ.context(1);
 		requester = zmqContext.socket(ZMQ.REQ);
@@ -43,10 +43,15 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 
 	@Override
 	public void initialize() {
-		requester.connect(_hostname);
-		logger.info("Launched 0MQ client, bind to " + _hostname);
-		orchestratorConnection.connect(orchestratorHostname);
-		logger.info("Launched 0MQ client to connect to orchestrator, bind to " + orchestratorHostname);
+		requester.connect(recommendationEndpoint);
+		logger.info("Launched 0MQ client, bind to " + recommendationEndpoint);
+		logger.info("Sending HELLO-RECOMMENDER-ENGINE to recommender engine");
+		requester.send("HELLO-RECOMMENDER-ENGINE");
+		logger.info("Hello sent, waiting for answer");
+		ZMsg reply =  ZMsg.recvMsg(requester);
+		logger.info("Answer from recommender engine " + reply);
+		orchestratorConnection.connect(orchestratorHostport);
+		logger.info("Launched 0MQ client to connect to orchestrator, bind to " + orchestratorHostport);
 	}
 
 	@Override
@@ -64,17 +69,19 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 				logger.info("Received end of recommendation file");
 				orchestratorConnection.sendMore("FINISHED");
 				orchestratorConnection.send(recommendationAgentName, ZMQ.NOBLOCK);
+				logger.info("Sent 'FINISHED' to orchestrator, waiting for reply ...");
                 ZMsg reply =  ZMsg.recvMsg(orchestratorConnection);
-                logger.info("Sent 'FINISHED' to orchestrator, received reply:" + reply.remove().toString());
+				logger.info("Received reply :" + reply.remove().toString());
+
 			} else {
-				logger.info("Requesting recommendation for event ["+body+"]");
 				if(parsedRequest.length < 5) {
 					logger.error("Received wrong data format for event ["+body+"]");
 				} else {
+					logger.info("Requesting recommendation for event ["+body+"]");
 					requester.sendMore("RECOMMEND");
 					logger.info("Sending " + parsedRequest[3] + " to recommendation engine.");
 					requester.sendMore(parsedRequest[3]);
-					requester.send(parsedRequest[4], ZMQ.NOBLOCK);
+					requester.send(parsedRequest[4]);
 
 					ZMsg reply =  ZMsg.recvMsg(requester);
 					if (reply == null) {
@@ -87,10 +94,7 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 					}
 					else {
 						logger.info("Received recommendation [" + reply + "]");
-
 						String response = body + fieldSeparator + reply.remove().toString();
-
-
 						// TODO PARSING RESPONSE AND ADD IT TO RESULT
 						event.setBody(response.getBytes(Charset.forName("UTF-8")));
 					}
@@ -128,14 +132,14 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	}
 
 	public static class Builder implements Interceptor.Builder {
-		private String hostname;
+		private String recommendationEndpoint;
 		private String orchestratorHostname;
 		private String recommendationManagerName;
 		private int timeoutMillis;
 
 		@Override
 		public Interceptor build() {
-			return new IdomaarRecommendationInterceptor(hostname, orchestratorHostname, recommendationManagerName, timeoutMillis);
+			return new IdomaarRecommendationInterceptor(recommendationEndpoint, orchestratorHostname, recommendationManagerName, timeoutMillis);
 		}
 
 		private String retrieveProperty(Context context, String systemPropertyName, String contextPropertyName) {
@@ -146,7 +150,7 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 
 		@Override
 		public void configure(Context ctx) {
-			this.hostname = retrieveProperty(ctx, "idomaar.recommendation.hostname", "zeromqSocket");
+			this.recommendationEndpoint = retrieveProperty(ctx, "idomaar.recommendation.hostname", "zeromqSocket");
 			this.orchestratorHostname = retrieveProperty(ctx, "idomaar.orchestrator.hostname", "orchestratorZeromqSocket");
 			this.recommendationManagerName = Preconditions.checkNotNull(retrieveProperty(ctx, "idomaar.recommendation.manager.name", "recommendationManagerName"));
 			this.timeoutMillis = Integer.parseInt(retrieveProperty(ctx, "idomaar.recommendation.timeout.millis", "timeoutMillis"));

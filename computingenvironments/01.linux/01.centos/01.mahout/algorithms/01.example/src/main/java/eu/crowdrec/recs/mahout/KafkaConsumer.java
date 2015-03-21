@@ -34,7 +34,7 @@ public class KafkaConsumer {
 	}
 
 	public boolean run(int a_numThreads, InternalDataModel dataModel, int timeoutSeconds, boolean writeData) {
-		
+		System.out.println("Kafka consumer reading from topic " + topic);
 		if(streams == null) {
 			Map<String, Integer> topicCountMap = new HashMap<String, Integer>();
 			topicCountMap.put(topic, new Integer(numThreads));
@@ -89,6 +89,7 @@ public class KafkaConsumer {
 		props.put("zookeeper.session.timeout.ms", "400");
 		props.put("zookeeper.sync.time.ms", "200");
 		props.put("auto.commit.interval.ms", "1000");
+		props.put("auto.offset.reset", "smallest");
 
 		return new ConsumerConfig(props);
 	}

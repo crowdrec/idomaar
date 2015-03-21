@@ -1,37 +1,41 @@
 import  zmq
+import datetime
 import  os
-import sys
 import logging
-import colorlog
 import yaml
-from orchestrator_exceptions import TimeoutException
+import time
+from generated_flume_config import FlumeConfig
+from http_comp_env import HttpComputingEnvironmentProxy
 from recommendation_manager import RecommendationManager
 from util import timed_exec
-from vagrant_executor import VagrantExecutor
+from zmq_comp_env import ZmqComputingEnvironmentProxy
 
 logger = logging.getLogger("orchestrator")
 
 class Orchestrator(object):
-    def __init__(self, executor, datastreammanager, training_uri, test_uri, port=2760):
+
+    flume_config_base_dir = '/vagrant/flume-config/config'
+
+    def __init__(self, executor, datastreammanager, config):
+        self.config = config
+        self.recommendation_target = config.recommendation_target
         self.executor = executor
         self.datastreammanager = datastreammanager
 
-        self.training_uri = training_uri
-        self.test_uri = test_uri
+        self.training_uri = config.training_uri
+        self.test_uri = config.test_uri
 
-        self._context = zmq.Context()
-        self.comp_env_socket = self._context.socket(zmq.REQ)
+        if config.computing_environment_address.startswith("tcp://"): self.comp_env_proxy = ZmqComputingEnvironmentProxy(config.computing_environment_address)
+        elif config.computing_environment_address.startswith("http://"): self.comp_env_proxy = HttpComputingEnvironmentProxy(config.computing_environment_address)
+        else: raise "Unrecognized computing environment address."
 
         self.reco_manager_socket = zmq.Context().socket(zmq.REP)
         self.reco_manager_socket.bind('tcp://*:%s' % self.executor.orchestrator_port)
 
-        # TODO Number of (concurrently running) recommendation managers should be configured externally, see issue #40
-        self.num_concurrent_recommendation_managers = 1
-
-        self.reco_managers_by_name = self.create_recommendation_managers(self.num_concurrent_recommendation_managers)
+        self.reco_managers_by_name = self.create_recommendation_managers(self.config.recommendation_request_thread_count)
 
     def create_recommendation_managers(self, count):
-        return {"RM" + str(i): RecommendationManager("RM" + str(i), self.executor) for i in range(count)}
+        return {"RM" + str(i): RecommendationManager("RM" + str(i), self.executor, self.flume_config_base_dir) for i in range(count)}
 
     def read_yaml_config(self, file_name):
         with open(file_name, 'r') as input_file:
@@ -41,26 +45,16 @@ class Orchestrator(object):
         """ Tell the computing environment to start reading training data from the kafka queue
             Instructs the flume agent on the datastreammanager vm to start streaming training data. Then sends a TRAIN message to the computing environment, and
             wait until training is complete."""
-
-        logger.info("DO: starting data reader for training data uri=[" + str(self.training_uri) + "]")
-        flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=' + self.training_uri + ' -Didomaar.sourceType=file'
-        self.executor.run_on_data_stream_manager(flume_command)
-
         logger.info("Sending TRAIN message to computing environment and waiting for training to be ready ...")
-        # Pass to the orchestrator the zookeeper address and the name of the topics
-        # THE FORMAT IS
-        # MESSAGE, ZOOKEEPER URL, ENTITIES TOPIC, RELATIONS TOPIC
-        train_message = ['TRAIN', zookeeper_hostport, "data"]
-
-        train_response, took_mins = timed_exec(lambda: self.response_from_comp_env(request=train_message))
+        train_response, took_mins = timed_exec(lambda: self.comp_env_proxy.send_train(zookeeper_hostport=zookeeper_hostport, kafka_topic=self.config.data_topic))
         if train_response[0] == 'OK':
             logger.info("Training completed successfully, took {0} minutes.".format(took_mins))
-            return train_response
+            recommendation_endpoint = train_response[1]
+            return recommendation_endpoint
         if train_response[0] == 'KO':
             raise Exception("Computing environment answered with 'KO': error occurred during recommendation model training.")
         else:
             raise Exception("Unexpected message received from computing environment." + str(train_response))
-
 
     def read_zookeeper_hostport(self):
         datastream_config = self.read_yaml_config(os.path.join(self.datastreammanager, "vagrant.yml"))
@@ -69,64 +63,64 @@ class Orchestrator(object):
         zookeeper_hostport = "{host}:{port}".format(host=datastream_ip_address, port=zookeeper_port)
         return zookeeper_hostport
 
-    def response_from_comp_env(self, request, timeout_millis=None):
-        if type(request) is list: self.comp_env_socket.send_multipart(request)
-        else: self.comp_env_socket.send(request)
-        poller = zmq.Poller()
-        poller.register(self.comp_env_socket, zmq.POLLIN) # POLLIN for recv, POLLOUT for send
-        logger.info("Sending request {0} to computing environment.".format(request))
-        logger.info("Waiting {time} for computing environment to answer ...".format(time=str(timeout_millis / 1000) + " secs" if timeout_millis else "indefinitely"))
-        message = self.comp_env_socket.recv_multipart()
-        if not message:
-            self.comp_env_socket.close()
-            raise TimeoutException("No answer from computing environment, probable timeout.")
-        logger.info("Response from computing environment " + str(message))
-        return message
+    def create_topic_names(self):
+        if self.config.new_topic:
+            now = datetime.datetime.now()
+            suffix = "{mo}{d}-{h}{mi}{sec}".format(y=now.year,mo=now.month,d=now.day,h=now.hour,mi=now.minute,sec=now.second)
+            self.config.data_topic = "data-" + suffix
+            self.config.recommendations_topic = "recommendations-" + suffix
+        logger.info("Using Kafka topic names: {0} for data, {1} for recommendations".format(self.config.data_topic, self.config.recommendations_topic))
 
+    def feed_training_data(self):
+        self.create_flume_config('idomaar-TO-kafka-train.conf')
+        logger.info("Start feeding training data, data reader for training data uri=[" + str(self.training_uri) + "]")
+        flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-train.conf -Didomaar.url=' + self.training_uri + ' -Didomaar.sourceType=file'
+        self.executor.run_on_data_stream_manager(flume_command)
 
-    def connect_to_comp_env(self):
-        computing_environment_address = "tcp://192.168.22.100:2760"
-        computing_environment_startup_secs = 20
+    def feed_test_data(self):
+        self.create_flume_config('idomaar-TO-kafka-test.conf')
+        logger.info("Start feeding test data to queue")
+        ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
+        test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.test_uri + " -Didomaar.sourceType=file"
+        self.executor.run_on_data_stream_manager(test_data_feed_command)
 
-        self.comp_env_socket.connect(computing_environment_address)
-        logger.info("Connected to " + computing_environment_address)
-        logger.info("Waiting at most {secs} secs for computing environment to get ready ...".format(secs=computing_environment_startup_secs))
-        try:
-            message = self.response_from_comp_env(request="HELLO", timeout_millis=computing_environment_startup_secs*1000)
-        except Exception:
-            raise Exception("No answer from computing environment, probable timeout. Computing environment failed or didn't start in {secs} seconds.".format(secs=computing_environment_startup_secs))
-        if message[0] != 'READY':
-            raise Exception("Computing environment send message {0}, which is not READY.".format(message))
+    def create_flume_config(self, template_file_name):
+        config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name=template_file_name)
+        config.set_value('a1.sinks.kafka_data.topic', self.config.data_topic)
+        config.set_value('a1.sinks.kafka_rec.topic', self.config.recommendations_topic)
+        config.generate()
 
     def run(self):
-        zookeeper_hostport = self.read_zookeeper_hostport()
+        self.create_topic_names()
+
+        datastream_config = self.read_yaml_config(os.path.join(self.datastreammanager, "vagrant.yml"))
+        datastream_ip_address = datastream_config['box']['ip_address']
+        #TODO: properly handle orchestrator location
+        orchestrator_ip = datastream_ip_address
+        zookeeper_port = datastream_config['zookeeper']['port']
+        zookeeper_hostport = "{host}:{port}".format(host=datastream_ip_address, port=zookeeper_port)
 
         self.executor.start_datastream()
-        self.executor.configure_datastream(self.num_concurrent_recommendation_managers, zookeeper_hostport)
+        self.executor.configure_datastream(self.config.recommendation_request_thread_count, zookeeper_hostport, config=self.config)
         self.executor.start_computing_environment()
-        self.connect_to_comp_env()
+        self.comp_env_proxy.connect(timeout_secs=20)
 
-        logger.info("Successfully connected to computing environment, start feeding train data.")
 
-        train_response = self.send_train(zookeeper_hostport=zookeeper_hostport)
+        self.feed_training_data()
+        recommendation_endpoint = self.send_train(zookeeper_hostport=zookeeper_hostport)
+        logger.info("Received recommendation endpoint " + str(recommendation_endpoint))
 
-        # TODO DESTINATION FILE MUST BE PASSED FROM COMMAND LINE
+        self.feed_test_data()
+
+        manager = self.reco_managers_by_name.itervalues().next()
+        manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol, recommendations_topic=self.config.recommendations_topic)
         for reco_manager in self.reco_managers_by_name.itervalues():
-            reco_manager.start()
-
-        ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
-        logger.info("Start sending test data to queue")
-
-        test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/idomaar-TO-kafka.conf -Didomaar.url=" + self.test_uri + " -Didomaar.sourceType=file"
-        self.executor.run_on_data_stream_manager(test_data_feed_command)
+            reco_manager.start(orchestrator_ip, recommendation_endpoint)
 
         ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
         ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
 
-        test_message = ['TEST']
-        logger.warn("WAIT: sending message "+ ''.join(test_message) +" and wait for response")
-
-        self.response_from_comp_env(request=test_message)
+        self.comp_env_proxy.send_test()
         logger.info("INFO: recommendations correctly generated, waiting for finished message from recommendation manager agents")
 
         reco_manager_message = self.reco_manager_socket.recv_multipart()
@@ -136,23 +130,23 @@ class Orchestrator(object):
             reco_manager_name = reco_manager_message[1] if len(reco_manager_message) > 1 else ""
             reco_manager = self.reco_managers_by_name.get(reco_manager_name)
             if reco_manager is not None:
-                logger.info("Recommendation manager " + reco_manager_name + "has finished processing recommendation queue, shutting all managers down.")
-                for manager in self.reco_managers_by_name.itervalues(): reco_manager.stop()
+                logger.info("Recommendation manager " + reco_manager_name + "has finished processing recommendation queue.")
+                logger.warn("Waiting 20 secs to work around Flume issue FLUME-1318.")
+                time.sleep(20)
+                logger.info("Shutting all managers down ...")
+                for manager in self.reco_managers_by_name.itervalues(): manager.stop()
             else:
                 logger.error("Received FINISHED message from a recommendation manager named " + reco_manager_name + " but no record of this manager is found.")
 
         ## TODO RECEIVE SOME STATISTICS FROM THE COMPUTING ENVIRONMENT
 
+        # TODO: check if data stream channel is empty (http metrics)
+        # TODO: test/evaluate the output
 
-        logger.info("DO: stop")
-        msg = ['STOP']
-        self.comp_env_socket.send_multipart(msg)
-
-        self.comp_env_socket.close()
-        self._context.term()
+        self.comp_env_proxy.send_stop()
+        self.close()
 
     def close(self):
         logger.info("Orchestrator closing...")
-#        self.comp_env_socket.close()
-        self._context.destroy()
+        self.comp_env_proxy.close()
         logger.info("Orchestrator shutdown.")
