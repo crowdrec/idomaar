@@ -1,0 +1,425 @@
+2015-03-15 Michael Arnold <github@razorsedge.org> - 3.0.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (12):
+  * Add link to supported operating systems for CM4.
+  * Update rspec-puppet ~> 2.0 and metadata-json-lint >= 0.0.4 with
+    modulesync.
+  * expect { should }.to raise_error(...) replaced with should
+    raise_error(...)
+  * Fix puppetlint rake task with modulesync.
+  * Update puppetlabs/postgresql dep to >=3.0.0 <5.0.0
+  * Switch to herculesteam/augeasproviders.
+  * Update module dependency version requirements.
+  * Remove undesirable tags from metadata.json.
+  * Update README.markdown.
+  * Add Ubuntu 14.04 to supported operating systems.
+  * Stick with rspec 2 for unit tests.
+  * Update versions for 3.0.0 release.
+ 
+
+2015-01-19 Michael Arnold <github@razorsedge.org> - 2.2.1
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (7):
+  * Add metadata-json-lint support to Gemfile and Rakefile.
+  * Fix license and unbounded ranges in metadata.json.
+  * Fix puppet-lint errors.
+  * Manage common files with modulesync.
+  * Manage .puppet-lint.rc with modulesync.
+  * Disable caching of fixtures.
+  * Update versions for 2.2.1 release.
+ 
+ Djuri Baars <dsbaars@gmail.com> (2):
+  * Trusty extra step fix
+  * Added tests for extra trusty step
+ 
+
+2014-12-07 Michael Arnold <github@razorsedge.org> - 2.2.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (7):
+  * Disable transparent hugepages on RedHat.
+  * Improve Exec['disable_transparent_hugepage_defrag'].
+  * Use shell provider for hugepages exec.
+  * Disable kernel transparent hugepage compaction everywhere.
+  * Comment out gems we do not use to keep Travis fast.
+  * Remove jre/java_sdk  Java alternatives links.
+  * Update versions for 2.2.0 release.
+ 
+ root <root@wn4.hadoop.com> (7):
+  * added parcel_dir param
+  * upated comments for class arguments
+  * updated spec
+  * updated spec
+  * adding #
+  * fixing typo
+  * changing the parameter name
+ 
+ syam <syam@wn4.hadoop.com> (2):
+  * changes for configuring custom parcel directory
+  * reduced the font size
+ 
+
+2014-10-03 Michael Arnold <github@razorsedge.org> - 2.1.1
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (5):
+  * Dynamically generate /usr/java/default symlink.
+  * Change the order of the tags in metadata.json.
+  * Lint: Fix => alignment.
+  * Update to newer Gemfile, Rakefile, and spec_helper.
+  * Update versions for 2.1.1 release.
+ 
+
+2014-09-20 Michael Arnold <github@razorsedge.org> - 2.1.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (9):
+  * Convert fixtures repositories to use https.
+  * Expand Puppet versions tested in Travis-CI.
+  * Allow tracking of metadata.json.
+  * Switch to using metadata.json vs Modulefile.
+  * Test against our augeasproviders dependency.
+  * Expand Puppet versions tested in Travis-CI.
+  * Fix CDH/gplextras mismatch.
+  * Fix supported PE versions in metadata.json.
+  * Update versions for 2.1.0 release.
+ 
+
+2014-04-14 Michael Arnold <github@razorsedge.org> - 2.0.2
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (5):
+  * Update Java symlink to jdk1.7.0_45-cloudera.
+  * Add a Requirements section to the README.
+  * Fix links in README to scroll to correct locations.
+  * Update /etc/profile.d/java.sh for new JDK.
+  * Update versions for 2.0.2 release.
+ 
+
+2014-04-02 Michael Arnold <github@razorsedge.org> - 2.0.1
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (3):
+  * Fix typos and image link in README.markdown.
+  * Really fix image link in README.markdown.
+  * Update versions for 2.0.1 release.
+ 
+
+2014-04-01 Michael Arnold <github@razorsedge.org> - 2.0.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (58):
+  * Support Cloudera Manager 5 and Java 7.
+  * Create new cdh5 and gplextras5 subclasses.
+  * Do not start CM DB service before package is installed.
+  * Install CDH5 by default when not using parcels.
+  * Include impala and search in cdh5 subclass.
+  * Add support for JCE 7 files.
+  * Add rspec tests for CM5 and Java 7.
+  * Add rspec tests for gplextras5.
+  * Add rspec tests for CDH5.
+  * Update rspec tests for main class.
+  * Add Search support to cdh5 subclass.
+  * Fix errors found during rspec testing.
+  * Fix package tags and collections.
+  * Do not install docs (hbase-solr-doc).
+  * Use new hcatalog package names.
+  * Add more classes to cover new additions in CDH5.
+  * Install pig-udf-datafu as part of cdh5::pig.
+  * Update the list of CDH5 packages to install.
+  * Update all links in the README to point to C5.
+  * Update TODO.md.
+  * Added Class['cloudera::cdh5::spark'].
+  * Update README.md.
+  * Added $install_cmserver parameter to Class['cloudera'].
+  * Update Puppet tests to work with $install_cmserver.
+  * Fix README.md to use C5 classes.
+  * Set kernel vm.swappiness=0 during install.
+  * Update README.md about kernel vm.swappiness.
+  * Do not install /usr/java/default on Debian osfamily.
+  * Fix Puppetdoc defaults.
+  * Add compatibility information to metadata.json.
+  * Removed deprecated Class['cloudera::repo'].
+  * Renamed yumserver and yumpath parameters to repo*.
+  * Update TODO.md.
+  * Support /etc/ssl in addition to /etc/pki/tls.
+  * Update README.md.
+  * Remove Modulefile duplication from metadata.json.
+  * Renamed metadata.json -> .metadata.json
+  * Rename parameter use_gplextras to install_lzo.
+  * Add rspec tests for Class['cloudera::gplextras'].
+  * Install native LZO libraries to support Hadoop LZO.
+  * Add deprecation notice for use_gplextras.
+  * First draft of README.markdown.
+  * Second pass at README.markdown updates.
+  * Removed all template notes from README.markdown.
+  * Added Cloudera Certified logo to README.markdown.
+  * Third pass at README.markdown updates.
+  * Renamed yumserver and yumpath parameters to repo*.
+  * Added deprecation warning for yumserver and yumpath.
+  * Include additional defaults for TLS parameters.
+  * Rearrange Usage section of the README.markdown.
+  * More polishing of README.markdown.
+  * Rename parameter use_gplextras to install_lzo.
+  * Add deprecation notice for use_gplextras.
+  * Added Upgrading to TOC.
+  * Add local logo_Cloudera_Certified.jpg to README.
+  * Removed README.md.
+  * Add metadata.json back to .gitignore.
+  * Update versions for 2.0.0 release.
+ 
+
+2014-03-02 Michael Arnold <github@razorsedge.org> - 1.0.1
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (4):
+  * Fix rspec errors from missing lsbdistid fact.
+  * Add missing quotes around class name.
+  * Be more stringent with the module dependencies.
+  * Update versions for 1.0.1 release.
+ 
+
+2014-02-19 Michael Arnold <github@razorsedge.org> - 1.0.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (26):
+  * Initial Suse zyprepo support.
+  * Support alternatives on Suse.
+  * Update rpsec tests for SLES support.
+  * Update README.md and TODO.md for SLES support.
+  * Remove explicit support for zypper package provider.
+  * Initial Debian and Ubuntu APT support.
+  * Fix Java deployment on Debian and Ubuntu.
+  * Use path to find the service command.
+  * Add missing aptkey suport on Ubuntu.
+  * Disable services only on supported OSs.
+  * Remove the hard-coded Class order.
+  * Update README.md to indicate Debian and Ubuntu support.
+  * Revamp Java alternatives.
+  * Allow for use of external Java module.
+  * Make sure JDK is install before other stuff.
+  * Improve JDK installation ordering.
+  * Drop prefix on yumserver-related class parameters.
+  * Clean out commented code.
+  * Collapse class anchors.
+  * Simplify the $use_parcels conditional.
+  * Do not start CM agent until all software is present.
+  * Require Class['epel'] on EL5 for LZO/GPL Extras.
+  * Update documentation.
+  * Call apt::source with $architecture where appropriate.
+  * Require dependency puppetlabs/apt 1.4.1 or newer.
+  * Update versions for 1.0.0 release.
+ 
+
+2014-02-02 Michael Arnold <github@razorsedge.org> - 0.9.2
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (4):
+  * Fix puppetlabs-mysql name error in Modulefile.
+  * Disable Service['solr-server'].
+  * Update TODO.md.
+  * Update versions for 0.9.2 release.
+ 
+
+2014-02-02 Michael Arnold <github@razorsedge.org> - 0.9.1
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (2):
+  * Fix metadata dependency invalid version.
+  * Update versions for 0.9.1 release.
+ 
+
+2014-02-02 Michael Arnold <github@razorsedge.org> - 0.9.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (33):
+  * Deal with sites that purge /etc/yum.repos.d/.
+  * Configure correct permissions on the keystore file.
+  * Fix lint errors in TLS tests.
+  * Fix version dependencies on SQL modules.
+  * Update Geppetto .project to version 4.
+  * Use new rspec-puppet "should compile".
+  * Change all module name references to $module_name.
+  * Install $majdistrelease pattern in params.pp.
+  * Update Travis-CI test matrix.
+  * Update documentation.
+  * Set tags on packages for fancy dependency chaining.
+  * Add some more tests (similar to the README.md).
+  * Switch to deploying CDH via parcels instead of RPMs.
+  * Update README to cover the change in parcel support.
+  * Add more CM server tests.
+  * Update MySQL/PostgreSQL dependencies.
+  * Update puppetdoc to reflect new requires in cm::server.
+  * Revert support for puppetlabs/postgresql 3.x.
+  * Separate Impala install from CDH.
+  * Move cloudera::repo to cloudera::cdh::repo.
+  * Added cloudera::repo backwards compatibility shim.
+  * Add tests for Impala deployment.
+  * Update TODO.md.
+  * Install Cloudera Search.
+  * Canonicalize all include statements.
+  * Switch all tests to use cm_server_host => localhost.
+  * Install Cloudera GPL Extras (LZO).
+  * Integrate GPL Extras with Class['cloudera'].
+  * Add $use_gplextras parameter to allow choice.
+  * Change Class['search'] to deploy the documented packages.
+  * Add package support for hcatalog, sentry, and sqoop2.
+  * Update TODO.md.
+  * Update versions for 0.9.0 release.
+ 
+
+2013-09-14 Michael Arnold <github@razorsedge.org> - 0.8.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (13):
+  * Update ERB variables to be Ruby instance variables.
+  * Add support for CM agent TLS.
+  * Add rspec tests for listening_hostname/fqdn in CM agent.
+  * Add support for TLS server auth to CM agent.
+  * Add support for CM server TLS and java_ks.
+  * Fix the value of $server_ca_file to match the docs.
+  * Update README.md TLS section.
+  * Functests show that verify_cert_file needs CA chain.
+  * Add TLS settings to Class['cloudera'].
+  * Add support for installing parcels.
+  * Add a diectory filter for Geppetto.
+  * Add support for YUM proxy, username, and password.
+  * Update versions for 0.8.0 release.
+ 
+
+2013-08-17 Michael Arnold <github@razorsedge.org> - 0.7.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (21):
+  * Update the Modulefile summary.
+  * Remove execute bits from rspec test files.
+  * Add support for JCE unlimited strength policy files.
+  * Remove support for the beta version of Impala.
+  * Update the scm-config.ini template.
+  * Expand Puppet versions tested in Travis-CI.
+  * Rake validate to also check ERB for syntax errors.
+  * Remove git-log-to-changelog from Modulefile.
+  * Add before_script: back to Travis-CI config.
+  * Coorect test in Travis-CI before_script.
+  * Really correct the test in Travis-CI before_script.
+  * No idea how to correct the test in Travis-CI before_script.
+  * Stick with puppetlabs-mysql 0.9.0.
+  * I hate you Travis-CI before_script.
+  * Nope.  Stick with puppetlabs-mysql 0.8.1.
+  * Deal with changes to puppetlabs/mysql mysql::config.
+  * Use Cloudera's copy of ext-2.2.zip.
+  * Add contribution instructions to README.md.
+  * Revert to using puppetlabs-mysql HEAD.
+  * Drop testing support for Puppet 2.6.
+  * Update versions for 0.7.0 release.
+ 
+
+2013-04-10 Michael Arnold <github@razorsedge.org> - 0.6.3
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (2):
+  * Add puppet-lint to Gemfile to fix Travis.
+  * Update versions for 0.6.3 release.
+ 
+
+2013-04-10 Michael Arnold <github@razorsedge.org> - 0.6.2
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (2):
+  * Add puppet-lint support.
+  * Update versions for 0.6.2 release.
+ 
+
+2013-02-23 Michael Arnold <github@razorsedge.org> - 0.6.1
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (5):
+  * Add ripienaar/concat to fix postgresql rspec error.
+  * Add rspec require to Exec['scm_prepare_database'].
+  * Drop Travis support for testing old releases.
+  * Remove Note in README that was fixed in 0.6.0.
+  * Update versions for 0.6.1 release.
+ 
+
+2013-02-20 Michael Arnold <github@razorsedge.org> - 0.6.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (5):
+  * Re-enable PostgreSQL support.
+  * Fixed rspec tests for defined types.
+  * Finalize puppetlabs/postgresql dependency version.
+  * Add CHANGELOG generation to the Modulefile.
+  * Update versions for 0.6.0 release.
+ 
+
+2013-01-30 Michael Arnold <github@razorsedge.org> - 0.5.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (5):
+  * Remove trailing comma in class parameters.
+  * Add Travis-CI support for create_resources.
+  * Make puppet-lint happy.
+  * Remove PostgreSQL support.
+  * Update versions for 0.5.0 release.
+ 
+
+2013-01-30 Michael Arnold <github@razorsedge.org> - 0.3.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (5):
+  * Fix configs.
+  * First round of rspec tests.
+  * Rspec tests for cloudera::cm::server.
+  * Fix some spacing issues.
+  * Added the rest of the rspec tests.
+ 
+
+2013-01-25 Michael Arnold <github@razorsedge.org> - 0.1.0
+=========================================================
+
+ Michael Arnold <github@razorsedge.org> (37):
+  * Added standard puppet module boilerplate.
+  * Add Class['cloudera::repo'].
+  * Refacter SCM server and agent manifests.
+  * Rename module from scm to cloudera.
+  * Massive parameterized class effort.
+  * Stupid vim tried to be helpful.
+  * Manage Package['cloudera-manager-daemons'].
+  * Lots of fixes.
+  * Add puppet parser validate rake task.
+  * Fix missing curly brace. (Yay validation).
+  * Drop puppetlabs/stdlib dependency to 2.3.0.
+  * Disable service hadoop-httpfs.
+  * Do not install package cloudera-manager-daemons.
+  * Drop Flume support.
+  * Rename scm_agent and scm_server classes.
+  * Install flume-ng as part of cloudera::cdh.
+  * Stupid vim tried to be helpful.
+  * Refacter cloudera::cm::server.
+  * Add functionality to the database specific section.
+  * Fix $module variable and add module dependencies.
+  * Add support for Java installation.
+  * Add java alternatives to set up symlinks.
+  * Add headers to files managed by puppet.
+  * Extra Oozie support.
+  * Linting and Puppetdoc.
+  * More linting.
+  * Improve Oozie EXT support.
+  * Allow CM to control the Flume service.
+  * Keep it simple.  Just include mysql::java.
+  * Add repositories to fixtures.yml.
+  * Add some Hive classes.
+  * Use safe_autoupgrade.
+  * Prepend cm_ to variable's documentation.
+  * Deal with package problems for hue-plugins.
+  * Add support fot Hadoop HDFS FUSE.
+  * Update README.md.
+  * Fix up README.md to look better.
+ 
+
+2011-11-17 Patrick Taylor Ramsey <ptr@cloudera.com> - 0.0.1
+===========================================================
+
+

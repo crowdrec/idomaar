@@ -1,0 +1,95 @@
+###
+### File managed by Puppet
+###
+[General]
+# Hostname of Cloudera SCM Server
+server_host=<%= @server_host %>
+
+# Port that server is listening on
+server_port=<%= @server_port %>
+
+## It should not normally be necessary to modify these.
+# Port that Agent should listen on
+# listening_port=9000
+
+# IP Address that Agent should listen on
+# listening_ip=
+
+# Hostname that Agent reports as its hostname
+listening_hostname=<%= scope.lookupvar('::fqdn') %>
+
+# Log file.  The supervisord log file will be placed into
+# the same directory.  Note that if the agent is being started
+# via the init.d script, /var/log/cloudera-scm-agent/cloudera-scm-agent.out
+# will also have a small amount of output (from before logging
+# is initialized.)
+# log_file=/var/log/cloudera-scm-agent/cloudera-scm-agent.log
+
+# Parcel directory
+# Unpacked parcels will be stored in this directory
+# Downloaded parcels will be stored in <parcel_dir>/../parcel-cache
+parcel_dir=<%= @parcel_dir %>
+
+# Heartbeat optimizations.
+# enable_eager_heartbeats=true
+
+# Monitoring max collection wait in seconds.
+max_collection_wait_seconds=10.0
+
+# Monitoring metric collection timeout in seconds.
+metrics_url_timeout_seconds=30.0
+
+# Monitoring task collection timeout in seconds.
+task_metrics_timeout_seconds=5.0
+
+# The list of non-device (nodev) filesystem types which will be monitored.
+monitored_nodev_filesystem_types=nfs,nfs4,tmpfs
+
+[Security]
+<% if @use_tls -%>
+use_tls=1
+verify_cert_file=<%= @verify_cert_file %>
+<% else -%>
+use_tls=0
+# verify_cert_file=
+<% end -%>
+# client_key_file=
+# client_keypw_file=
+# client_cert_file=
+
+## Location of Hadoop files. These are the CDH locations when installed by
+## packages. These are not used when CDH is installed by parcels.
+#[Hadoop]
+#cdh_flume_home=/usr/lib/flume-ng
+#cdh_hadoop_bin=/usr/bin/hadoop
+#cdh_hadoop_home=/usr/lib/hadoop
+#cdh_hbase_home=/usr/lib/hbase
+#cdh_hcat_home=/usr/lib/hcatalog
+#cdh_hdfs_home=/usr/lib/hadoop-hdfs
+#cdh_hive_home=/usr/lib/hive
+#cdh_httpfs_home=/usr/lib/hadoop-httpfs
+#cdh_hue_home=/usr/share/hue
+#cdh_hue_plugins_home=/usr/lib/hadoop
+#cdh_impala_home=/usr/lib/impala
+#cdh_mr1_home=/usr/lib/hadoop-0.20-mapreduce
+#cdh_mr2_home=/usr/lib/hadoop-mapreduce
+#cdh_oozie_home=/usr/lib/oozie
+#cdh_pig_home=/usr/lib/pig
+#cdh_solr_home=/usr/lib/solr
+#cdh_sqoop2_home=/usr/lib/sqoop2
+#cdh_yarn_home=/usr/lib/hadoop-yarn
+#cdh_zookeeper_home=/usr/lib/zookeeper
+#hive_default_xml=/etc/hive/conf.dist/hive-default.xml
+#jsvc_home=/usr/libexec/bigtop-utils
+#tomcat_home=/usr/lib/bigtop-tomcat
+
+## Location of Cloudera Management Suite Binaries
+#[Cloudera]
+#mgmt_home=/usr/share/cmf
+
+## Location of JDBC Drivers.
+#[JDBC]
+#cloudera_mysql_connector_jar=/usr/share/java/mysql-connector-java.jar
+#cloudera_oracle_connector_jar=/usr/share/java/oracle-connector-java.jar
+#By default, postgres jar is found dynamically in $MGMT_HOME/lib
+#cloudera_postgresql_jdbc_jar=

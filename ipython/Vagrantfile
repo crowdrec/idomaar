@@ -1,0 +1,57 @@
+## LOCAL VIRTUALBOX
+BOX_NAME   		= 'ubuntu/trusty64'
+BOX_URL       = 'https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box'
+
+
+## REMOTE AWS
+INSTANCE_TYPE = "m3.medium"
+REGION = "us-west-2"
+AMI = "ami-29ebb519" #ubuntu 14.04
+
+
+Vagrant.configure('2') do |config|
+
+  #### VIRTUALBOX SPECIFIC CONFIGURATION ####
+  config.vm.provider :virtualbox do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "1024"]
+      
+      config.vm.box = BOX_NAME
+      config.vm.box_url = BOX_URL
+      config.vm.network :private_network, ip: "192.168.22.100"
+      config.vm.network "forwarded_port", guest: 8888, host: 8888
+  end
+
+  
+  #### AMAZON AWS SPECIFIC CONFIGURATION ####
+  config.vm.provider :aws do |aws, override|
+    aws.access_key_id = ENV['AWS_ACCESS_KEY_ID']
+    aws.secret_access_key = ENV['AWS_SECRET_ACCESS_KEY']
+    aws.keypair_name = ENV['AWS_KPAIR_NAME']
+    override.ssh.private_key_path = ENV['AWS_SSH_PRIVKEY']
+    
+    aws.ami = AMI
+    aws.instance_type = INSTANCE_TYPE
+    aws.region = REGION
+
+    override.vm.box = 'dummy'
+    override.vm.box_url = 'https://github.com/mitchellh/vagrant-aws/raw/master/dummy.box'
+
+    override.ssh.username = "ubuntu"
+
+
+
+
+  end
+
+  #### PROVISION ####
+
+  config.vm.provision 'shell', inline: 'apt-get -q -y install puppet'
+  
+  config.vm.provision 'puppet' do |puppet|  
+        puppet.manifests_path   = 'puppet/manifests'
+        puppet.manifest_file  = 'site.pp'          
+        puppet.module_path    = 'puppet/modules'     
+  end     
+
+end
+

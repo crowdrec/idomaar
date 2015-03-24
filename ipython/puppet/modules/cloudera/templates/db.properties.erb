@@ -1,0 +1,23 @@
+###
+### File managed by Puppet
+###
+# Copyright (c) 2012 Cloudera, Inc. All rights reserved.
+#
+# This file describes the database connection.
+#
+
+# The database type
+com.cloudera.cmf.db.type=<%= @db_type %>
+
+# The database host
+# If a non standard port is needed, use 'hostname:port'
+com.cloudera.cmf.db.host=<%= @db_host %>:<%= @db_port %>
+
+# The database name
+com.cloudera.cmf.db.name=<%= @database_name %>
+
+# The database user
+com.cloudera.cmf.db.user=<%= @username %>
+
+# The database user's password
+com.cloudera.cmf.db.password=<%= @password %>
