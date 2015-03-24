@@ -1,0 +1,4 @@
+{
+  "recommendation_request_thread_count" : 1,
+  "messages_per_sec": 10
+}
