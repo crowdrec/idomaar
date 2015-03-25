@@ -6,6 +6,7 @@ How to setup the local, virtualbox bases, environment:
 3. change to ipython user with "sudo su - ipython"
 4. starts python notebook with "./start-ipython.sh"
 5. open your browser (on your host machine) and go to http://localhost:8888
+6. access to http://localhost:18080/ or http://localhost:18081/ to see the status of the local spark cluster while running a spark job
 
 
 If you want to test the creation of the machine on amazon AWS use "vagrant up --provider=aws", before that be sure to configure the following environment variables:
@@ -13,3 +14,6 @@ If you want to test the creation of the machine on amazon AWS use "vagrant up --
 'AWS_SECRET_ACCESS_KEY' - your amazon aws API secret key
 'AWS_KPAIR_NAME' - the name of the keypair you have created on EC2
 'AWS_SSH_PRIVKEY' - the local filename of the pem file
+
+
+
