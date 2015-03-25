@@ -14,4 +14,5 @@ export PYSPARK_SUBMIT_ARGS='--master spark://vagrant-ubuntu-trusty-64:7077'
 # add pyspark to PYTHON path
 export PYTHONPATH=$SPARK_HOME/python:$SPARK_HOME/python/build
 
+cd /vagrant/notebooks
 ipython notebook --profile=pyspark
