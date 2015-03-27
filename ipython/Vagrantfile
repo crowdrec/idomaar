@@ -17,7 +17,6 @@ Vagrant.configure('2') do |config|
       
       config.vm.box = BOX_NAME
       config.vm.box_url = BOX_URL
-      #config.vm.network :private_network, ip: "192.168.22.100"
       config.vm.network "forwarded_port", guest: 8888, host: 8888, id: "notebook"
       config.vm.network "forwarded_port", guest: 18080, host: 18080, id: "spark-master"
       config.vm.network "forwarded_port", guest: 18081, host: 18081, id: "spark-worker"
@@ -49,7 +48,6 @@ Vagrant.configure('2') do |config|
   #### PROVISION ####
 
   config.vm.provision 'shell', inline: 'apt-get -q -y install puppet'
-  
   config.vm.provision 'puppet' do |puppet|  
         puppet.manifests_path   = 'puppet/manifests'
         puppet.manifest_file  = 'site.pp'          

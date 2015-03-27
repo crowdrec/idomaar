@@ -1,11 +1,12 @@
-
+class { 'apt':
+  always_apt_update    => false,
+  apt_update_frequency => undef,
+  disable_keys         => undef
+}
 
  # INSTALL JAVA
+  apt::ppa { "ppa:webupd8team/java": }
 
-  exec { 'apt-get update':
-    command => '/usr/bin/apt-get update',
-    require => Apt::Ppa["ppa:webupd8team/java"],
-  } -> 
   exec {
     'set-licence-selected':
       command => '/bin/echo debconf shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections';
@@ -18,13 +19,8 @@
     ensure => installed
   }
 
-class { 'apt':
-  always_apt_update    => false,
-  apt_update_frequency => undef,
-  disable_keys         => undef
-}
 
-apt::ppa { "ppa:webupd8team/java": }
+
 
 exec { "import_CDH_key": 
   command => 'apt-key adv --recv-key --keyserver keyserver.ubuntu.com 327574EE02A818DD',
@@ -37,7 +33,6 @@ apt::source { 'cdh_5':
   location          => 'http://archive.cloudera.com/cdh5/ubuntu/trusty/amd64/cdh/',
   release           => 'trusty-cdh5',
   repos             => 'contrib',
-  trusted_source  	=> true,
   require => Exec['import_CDH_key']
 }
 
@@ -47,14 +42,13 @@ $ipython = [ "spark", "spark-master", "spark-worker", "ipython-notebook", "spark
 package { 
 	$ipython: 
 	ensure => "installed",
-	require =>  Apt::Source['cdh_5']
+	require =>  [Apt::Source['cdh_5'], Exec['fix_cloudera_installation_bug']]
  }
 
 ## fix cloudera depenency bug
 exec {
     'fix_cloudera_installation_bug':
      command => '/vagrant/scripts/fix_cloudera_installation.sh',
-     require => [Package[$ipython]],
      path => "/bin:/usr/sbin:/usr/bin",
      user => "root",
      creates => "/usr/lib/zookeeper/lib/slf4j-log4j12.jar"

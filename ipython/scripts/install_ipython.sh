@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 cd
 ipython profile create pyspark
 
@@ -11,9 +10,10 @@ cp /vagrant/scripts/start-ipython.sh /home/ipython/
 #cp /vagrant/scripts/log4j.properties /etc/spark/conf
 chmod +x start-ipython.sh
 
-touch ~/.bashrc
-echo 'PYTHONPATH=/usr/lib/spark/python/:/usr/lib/spark/python/build/:$PYTHONPATH' >> ~/.bashrc
+touch /.bashrc
+echo 'PYTHONPATH=/usr/lib/spark/python/:/usr/lib/spark/python/build/:$PYTHONPATH' >> /.bashrc
 
 ## copy notebooks
 cp /vagrant/notebooks/* /home/ipython
+
 
