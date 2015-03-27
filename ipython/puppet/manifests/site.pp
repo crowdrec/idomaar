@@ -76,3 +76,12 @@ exec {
      user => "ipython",
      environment => [ "HOME=/home/ipython" ] 
   }
+
+exec {
+    'disable_spark_logging':
+     command => 'cp /vagrant/scripts/log4j.properties /etc/spark/conf',
+     creates => "/etc/spark/conf/log4j.properties",
+     require =>  Exec['configure_ipython'],
+     path => "/bin:/usr/sbin:/usr/bin",
+     user => "root"
+  }
