@@ -19,7 +19,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.customize ["modifyvm", :id, "--memory", "2048"]
   end
 
-
   config.vm.provision "shell", path: "vagrant/01.java.sh"
   config.vm.provision "shell", path: "vagrant/02.maven.sh"
 

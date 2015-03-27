@@ -14,3 +14,6 @@ chmod +x start-ipython.sh
 touch ~/.bashrc
 echo 'PYTHONPATH=/usr/lib/spark/python/:/usr/lib/spark/python/build/:$PYTHONPATH' >> ~/.bashrc
 
+## copy notebooks
+cp /vagrant/notebooks/* /home/ipython
+

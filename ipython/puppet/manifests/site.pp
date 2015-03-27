@@ -42,7 +42,7 @@ apt::source { 'cdh_5':
 }
 
 # install spark, ipython and its requirements
-$ipython = [ "spark", "ipython-notebook", "spark-python", "python-pip", "python-dev", "python-numpy" ]
+$ipython = [ "spark", "spark-master", "spark-worker", "ipython-notebook", "spark-python", "python-pip", "python-dev", "python-numpy" ]
 
 package { 
 	$ipython: 
