@@ -78,11 +78,20 @@ class Orchestrator(object):
         self.executor.run_on_data_stream_manager(flume_command)
 
     def feed_test_data(self):
-        self.create_flume_config('idomaar-TO-kafka-test.conf')
-        logger.info("Start feeding test data to queue")
-        ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
-        test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.test_uri + " -Didomaar.sourceType=file"
-        self.executor.run_on_data_stream_manager(test_data_feed_command)
+        if self.config.data_to_recommendations: 
+            logger.info("Data treated as recommendation requests, sending directly ")
+            config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name='idomaar-TO-kafka-direct.conf')
+            config.set_value('agent.sinks.kafka_sink.topic', self.config.recommendations_topic)
+            config.generate()
+            logger.info("Start feeding data to Flume, Kafka sink topic is {0}".format(selc.config.recommendations_topic))
+            test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf"
+            self.executor.run_on_data_stream_manager(test_data_feed_command)
+        else:
+            self.create_flume_config('idomaar-TO-kafka-test.conf')
+            logger.info("Start feeding test data to queue")
+            ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
+            test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.test_uri + " -Didomaar.sourceType=file"
+            self.executor.run_on_data_stream_manager(test_data_feed_command)
 
     def create_flume_config(self, template_file_name):
         config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name=template_file_name)
@@ -105,13 +114,15 @@ class Orchestrator(object):
         self.executor.start_computing_environment()
         self.comp_env_proxy.connect(timeout_secs=20)
 
-
-        self.feed_training_data()
-        recommendation_endpoint = self.send_train(zookeeper_hostport=zookeeper_hostport)
-        logger.info("Received recommendation endpoint " + str(recommendation_endpoint))
+        if not self.config.skip_training_cycle:
+            self.feed_training_data()
+            recommendation_endpoint = self.send_train(zookeeper_hostport=zookeeper_hostport)
+            logger.info("Received recommendation endpoint " + str(recommendation_endpoint))
+        else:
+            logger.info("Training phase skipped, using {0} as recommendation endpoint.".format(self.config.computing_environment_address)) 
+            recommendation_endpoint = self.config.computing_environment_address
 
         self.feed_test_data()
-
         manager = self.reco_managers_by_name.itervalues().next()
         manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol, recommendations_topic=self.config.recommendations_topic)
         for reco_manager in self.reco_managers_by_name.itervalues():

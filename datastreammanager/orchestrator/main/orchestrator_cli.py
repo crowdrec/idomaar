@@ -7,6 +7,7 @@ import sys
 from local_executor import LocalExecutor
 from orchestrator import Orchestrator
 from vagrant_executor import VagrantExecutor
+from urlparse import urlparse
 
 logger = logging.getLogger("orchestrator")
 
@@ -19,7 +20,12 @@ class OrchestratorCli(cli.Application):
         " The default assumption is that the orchestrator is running on the same (virtual) box as the datastream components (hence doesn't have to go via vagrant)." )
 
     new_topic = cli.Flag(["--new-topic"], help = "If given, new Kafka topics will be created for data and recommendations feeds.", excludes = ['--data-topic', '--recommendations-topic'] )
-
+    
+    data_to_recommendations = cli.Flag(["--data-to-recommendations"], requires = ["--data-source"], help = "If given, data from the source will be treated as " +
+    " direct recommendations requests, and sent to the computing environment (via Kafka). Requires the --data-source switch. Implied by the --newsreel switch.")
+    
+    skip_training_cycle = cli.Flag(["--skip-training"], help = "If given, the training phase in the orchestrator lifecycle is skipped.")
+    
     comp_env = None
     recommendation_target = 'fs:/tmp/recommendations'
     data_topic = 'data'
@@ -38,7 +44,7 @@ class OrchestratorCli(cli.Application):
         """The relative path to the computing environment vagrant directory. This only makes sense if the orchestrator runs on the same host as the computing environment."""
         self.comp_env = directory
 
-    @cli.switch("--comp-env-address", str, mandatory=True, list=True)
+    @cli.switch(["--comp-env-address", "--address", "-a"], str, mandatory=True, list=True)
     def get_computing_environment_address(self, address):
         """The URL of the computing environment, either tcp://hostname:port for ZMQ communication or http://hostname:port for HTTP communication.
         If multiple addresses are given, only the last one is taken into account. This facilitates parameter overriding when called from shell scritps (that is,
@@ -46,22 +52,34 @@ class OrchestratorCli(cli.Application):
         address_used = address[-1]
         logger.info("{0} computing environment addresses given, using the last one {1}".format(len(address), address_used))
         self.computing_environment_address = address_used
+        try:
+            self.computing_environment_url = urlparse(address_used)
+        except:
+            logger.error("Cannot parse computing environment address URL.")
+            raise
+        
 
     @cli.switch("--config-file", str)
     def get_config_file(self, config_file):
         """Orchestrator configuration file, defaults to default-config.json"""
         self.config_file = config_file
 
-    @cli.switch("--training-uri", str, mandatory=True)
+    @cli.switch("--training-uri", str)
     def get_training_uri(self, training_uri):
         """The location of the training data."""
         self.training_uri = training_uri
 
-    @cli.switch("--test-uri", str, mandatory=True)
+    @cli.switch("--test-uri", str)
     def get_test_uri(self, test_uri):
         """The location of the test data."""
         self.test_uri = test_uri
-
+        
+    @cli.switch("--data-source", str, excludes=['--training-uri', '--test-uri'])
+    def get_data_source(self, data_source):
+        """Location of the data. This option can be used in cases (e.g. for Newsreel) when there is one single source of data. Cannot be used
+        together with the --training-uri, --test-uri switches."""
+        self.data_source = data_source
+        
     @cli.switch("--recommendation-target", str)
     def get_recommendation_target(self, target):
         """The location where recommendations are placed."""
@@ -77,10 +95,17 @@ class OrchestratorCli(cli.Application):
     def get_recommendation_topic(self, topic):
         """The Kafka topic where recommendations are fed."""
         self.recommendations_topic = topic
-
+        
+    @cli.switch("--newsreel")
+    def get_newsreel(self, requires=['--data-source']):
+        """Use the settings relevant for the Newsreel competition Task 2. Equivalent to the switches --skip-training --data-to-recommendations. 
+        It will check that the computing environment communication protocol is HTTP or HTTPS."""
+        self.newsreel = True
+        self.skip_training_cycle = True
+        self.data_to_recommendations = True
+        if not self.computing_environment_url.scheme in ['http', 'https']: raise "For Newsreel, the computing environment URL must have scheme http or https."
 
     def main(self):
-        # TODO RECOMMENDATION HOSTNAME MUST BE EXTRACTED FROM MESSAGES
         logger.info("Training data URI: %s" % self.training_uri)
         logger.info("Test data URI: %s" % self.test_uri)
         logger.info("Computing environment path: %s" % self.comp_env)

@@ -72,7 +72,6 @@ class LocalExecutor:
 
     def start_datastream(self):
         logger.info("*We* are the datastream vm." )
-        # return self.start(working_dir=self.datastream_manager_working_dir, subprocess_logger=datastream_logger)
 
     def start_computing_environment(self):
         logger.warn("Cannot start computing environment from datastream vm, it must be started externally.")

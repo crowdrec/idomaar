@@ -12,11 +12,16 @@ class HttpComputingEnvironmentProxy:
 
     def __init__(self, address):
         self.address = address
-
-    def connect(self, timeout_secs):
-        #self.comp_env_socket.connect(self.address)
-        #logger.info("Connected to " + self.address)
-        #logger.info("Waiting at most {secs} secs for computing environment to get ready ...".format(secs=timeout_secs))
+        
+    def check_connect(self, timeout_secs):
+        """Sends a POST request to the computing environment with an empty body and expects an HTTP 200 response code."""
+        try:
+            message = self.post_to_address(self.address, data=None, timeout_millis=timeout_secs*1000)
+        except Exception:
+            logger.exception("Exception occurred")
+            raise Exception("No answer from computing environment, probable timeout. Computing environment failed or didn't start in {secs} seconds.".format(secs=timeout_secs))
+    
+    def expect_ready(self, timeout_secs):
         try:
             message = self.respond(request="HELLO", timeout_millis=timeout_secs*1000)
         except Exception:
@@ -25,11 +30,17 @@ class HttpComputingEnvironmentProxy:
         if not message.startswith('READY'):
             raise Exception("Computing environment send message {0}, which is not READY.".format(message))
 
+    def connect(self, timeout_secs):
+        self.check_connect(timeout_secs)
+
     def post(self, command, data, timeout_millis):
         post_address = self.address + "/" + command
+        return self.post_to_address(post_address, data, timeout_millis)
+    
+    def post_to_address(self, post_address, data, timeout_millis):
         logger.info("POST to " + post_address)
         timeout_secs = timeout_millis / 1000 if timeout_millis is not None else None
-        response = requests.post(post_address, timeout=timeout_secs)
+        response = requests.post(post_address, data=data, timeout=timeout_secs)
         status_code = response.status_code
         logger.info("Received status code {0}, response {1}".format(status_code, response.text))
         if status_code != httplib.OK:
