@@ -1,0 +1,1 @@
+exec ../idomaar.sh --comp-env-address http://10.0.2.2:8088 --data-source /vagrant/data/newsreel-test/2014-07-01.data.idomaar_1k.txt --newsreel $@

@@ -22,9 +22,6 @@ class Orchestrator(object):
         self.executor = executor
         self.datastreammanager = datastreammanager
 
-        self.training_uri = config.training_uri
-        self.test_uri = config.test_uri
-
         if config.computing_environment_address.startswith("tcp://"): self.comp_env_proxy = ZmqComputingEnvironmentProxy(config.computing_environment_address)
         elif config.computing_environment_address.startswith("http://"): self.comp_env_proxy = HttpComputingEnvironmentProxy(config.computing_environment_address)
         else: raise "Unrecognized computing environment address."
@@ -72,9 +69,10 @@ class Orchestrator(object):
         logger.info("Using Kafka topic names: {0} for data, {1} for recommendations".format(self.config.data_topic, self.config.recommendations_topic))
 
     def feed_training_data(self):
+        training_uri = self.config.training_uri
         self.create_flume_config('idomaar-TO-kafka-train.conf')
-        logger.info("Start feeding training data, data reader for training data uri=[" + str(self.training_uri) + "]")
-        flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-train.conf -Didomaar.url=' + self.training_uri + ' -Didomaar.sourceType=file'
+        logger.info("Start feeding training data, data reader for training data uri=[" + str(training_uri) + "]")
+        flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-train.conf -Didomaar.url=' + training_uri + ' -Didomaar.sourceType=file'
         self.executor.run_on_data_stream_manager(flume_command)
 
     def feed_test_data(self):
@@ -82,24 +80,37 @@ class Orchestrator(object):
             logger.info("Data treated as recommendation requests, sending directly ")
             config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name='idomaar-TO-kafka-direct.conf')
             config.set_value('agent.sinks.kafka_sink.topic', self.config.recommendations_topic)
+            config.set_value('agent.sources.idomaar_source.fileName', self.config.data_source)
             config.generate()
-            logger.info("Start feeding data to Flume, Kafka sink topic is {0}".format(selc.config.recommendations_topic))
-            test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf"
-            self.executor.run_on_data_stream_manager(test_data_feed_command)
+            logger.info("Start feeding data to Flume, Kafka sink topic is {0}".format(self.config.recommendations_topic))
+            test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name agent --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf"
+            self.executor.start_on_data_stream_manager(command=test_data_feed_command, process_name="to-kafka-flume")
         else:
             self.create_flume_config('idomaar-TO-kafka-test.conf')
             logger.info("Start feeding test data to queue")
             ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
-            test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.test_uri + " -Didomaar.sourceType=file"
+            test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.config.test_uri + " -Didomaar.sourceType=file"
             self.executor.run_on_data_stream_manager(test_data_feed_command)
+            
+    def start_recommendation_manager(self, orchestrator_ip, recommendation_endpoint):
+        self.executor.start_simple_recommendation_manager("rm0", orchestrator_ip, recommendation_endpoint)
+        
 
     def create_flume_config(self, template_file_name):
         config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name=template_file_name)
         config.set_value('a1.sinks.kafka_data.topic', self.config.data_topic)
         config.set_value('a1.sinks.kafka_rec.topic', self.config.recommendations_topic)
         config.generate()
-
+        
     def run(self):
+        try:
+            self.do_run()
+        except KeyboardInterrupt:
+            logger.warn("Keyboard interrupt detected, shutting down ...")
+        self.close()
+
+
+    def do_run(self):
         self.create_topic_names()
 
         datastream_config = self.read_yaml_config(os.path.join(self.datastreammanager, "vagrant.yml"))
@@ -123,15 +134,20 @@ class Orchestrator(object):
             recommendation_endpoint = self.config.computing_environment_address
 
         self.feed_test_data()
+        
+        
         manager = self.reco_managers_by_name.itervalues().next()
         manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol, recommendations_topic=self.config.recommendations_topic)
-        for reco_manager in self.reco_managers_by_name.itervalues():
-            reco_manager.start(orchestrator_ip, recommendation_endpoint)
+        
+        self.start_recommendation_manager(orchestrator_ip, recommendation_endpoint)
+        
+#         for reco_manager in self.reco_managers_by_name.itervalues():
+#             reco_manager.start(orchestrator_ip, recommendation_endpoint)
 
         ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
         ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
 
-        self.comp_env_proxy.send_test()
+        if not self.config.no_control_messages: self.comp_env_proxy.send_test()
         logger.info("INFO: recommendations correctly generated, waiting for finished message from recommendation manager agents")
 
         reco_manager_message = self.reco_manager_socket.recv_multipart()
@@ -154,10 +170,11 @@ class Orchestrator(object):
         # TODO: check if data stream channel is empty (http metrics)
         # TODO: test/evaluate the output
 
-        self.comp_env_proxy.send_stop()
-        self.close()
-
     def close(self):
-        logger.info("Orchestrator closing...")
+        logger.info("Shutting down recommendation managers ...")
+        for manager in self.reco_managers_by_name.itervalues(): manager.stop()
+        if not self.config.no_control_messages:
+            logger.info("Sending stop message to computing environment...")
+            self.comp_env_proxy.send_stop() 
         self.comp_env_proxy.close()
         logger.info("Orchestrator shutdown.")

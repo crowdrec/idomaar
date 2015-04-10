@@ -26,6 +26,8 @@ class OrchestratorCli(cli.Application):
     
     skip_training_cycle = cli.Flag(["--skip-training"], help = "If given, the training phase in the orchestrator lifecycle is skipped.")
     
+    no_control_messages = cli.Flag(["--no-control-messages", '-n'], help = "If given, the orchestrator won't send control messages to the computing environment.")
+    
     comp_env = None
     recommendation_target = 'fs:/tmp/recommendations'
     data_topic = 'data'
@@ -98,16 +100,23 @@ class OrchestratorCli(cli.Application):
         
     @cli.switch("--newsreel")
     def get_newsreel(self, requires=['--data-source']):
-        """Use the settings relevant for the Newsreel competition Task 2. Equivalent to the switches --skip-training --data-to-recommendations. 
+        """Use the settings relevant for the Newsreel competition Task 2. Equivalent to the switches --skip-training --data-to-recommendations --no-control-messages. 
         It will check that the computing environment communication protocol is HTTP or HTTPS."""
         self.newsreel = True
         self.skip_training_cycle = True
         self.data_to_recommendations = True
+        self.no_control_messages = True
         if not self.computing_environment_url.scheme in ['http', 'https']: raise "For Newsreel, the computing environment URL must have scheme http or https."
 
     def main(self):
-        logger.info("Training data URI: %s" % self.training_uri)
-        logger.info("Test data URI: %s" % self.test_uri)
+        if self.data_source is not None:
+            logger.info("Data source: {0}".format(self.data_source))
+        else:
+            if self.training_uri is not None: logger.info("Training data URI: %s" % self.training_uri)
+            elif not self.skip_training_cycle: raise "No training URI is set (and training required)." 
+            if self.test_uri is not None: logger.info("Test data URI: %s" % self.test_uri)
+            else: raise "No test URI is set."
+            
         logger.info("Computing environment path: %s" % self.comp_env)
         basedir = os.path.abspath("../../")
         logger.info("Idomaar base path: %s" % basedir)

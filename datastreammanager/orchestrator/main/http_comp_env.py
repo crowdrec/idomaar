@@ -14,9 +14,9 @@ class HttpComputingEnvironmentProxy:
         self.address = address
         
     def check_connect(self, timeout_secs):
-        """Sends a POST request to the computing environment with an empty body and expects an HTTP 200 response code."""
+        """Sends a GET request to the computing environment with an empty body and expects an HTTP 200 response code."""
         try:
-            message = self.post_to_address(self.address, data=None, timeout_millis=timeout_secs*1000)
+            message = self.get_to_address(self.address, data=None, timeout_millis=timeout_secs*1000)
         except Exception:
             logger.exception("Exception occurred")
             raise Exception("No answer from computing environment, probable timeout. Computing environment failed or didn't start in {secs} seconds.".format(secs=timeout_secs))
@@ -37,6 +37,16 @@ class HttpComputingEnvironmentProxy:
         post_address = self.address + "/" + command
         return self.post_to_address(post_address, data, timeout_millis)
     
+    def get_to_address(self, get_address, data, timeout_millis):
+        logger.info("GET to " + get_address)
+        timeout_secs = timeout_millis / 1000 if timeout_millis is not None else None
+        response = requests.get(get_address, data=data, timeout=timeout_secs)
+        status_code = response.status_code
+        logger.info("Received status code {0}, response {1}".format(status_code, response.text))
+        if status_code != httplib.OK:
+            raise "Computing environment indicated error, HTTP code {0}".format(status_code)
+        return response.text
+
     def post_to_address(self, post_address, data, timeout_millis):
         logger.info("POST to " + post_address)
         timeout_secs = timeout_millis / 1000 if timeout_millis is not None else None
@@ -44,7 +54,7 @@ class HttpComputingEnvironmentProxy:
         status_code = response.status_code
         logger.info("Received status code {0}, response {1}".format(status_code, response.text))
         if status_code != httplib.OK:
-            raise "Computing environment indicated error, HTTP code {0)".format(status_code)
+            raise "Computing environment indicated error, HTTP code {0}".format(status_code)
         return response.text
 
     def respond(self, request, timeout_millis=None):
@@ -76,7 +86,4 @@ class HttpComputingEnvironmentProxy:
         return self.respond(request=['STOP'])
 
     def close(self):
-        logger.info("ZMQ connection closing ...")
-        self.comp_env_socket.close()
-        self.context.term()
-        logger.info("ZMQ connection closed.")
+        logger.info("Closing ...")

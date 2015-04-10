@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 import sys
+from threading import Thread
 
 logger = logging.getLogger("orchestrator:execute")
 datastream_logger = logging.getLogger("datastream")
@@ -33,6 +34,37 @@ class LocalExecutor:
                                      subprocess_logger=datastream_logger, exit_on_failure=exit_on_failure)
         if capture_output: return result
         else: return result[0]
+        
+    def start_on_data_stream_manager(self, command, process_name, exit_on_failure=True):
+        """Start a command asynchronously on the data stream manager VM."""
+        command_list = command.split(" ")
+        command_list.insert(0, "sudo")
+        result = self.execute_in_background(command=command_list, working_dir=self.datastream_manager_working_dir,
+                                     subprocess_logger=logging.getLogger("bg:" + process_name), exit_on_failure=exit_on_failure)
+    
+    def execute_in_background(self, command, working_dir, subprocess_logger, exit_on_failure):
+        vagrant_command_string = ' '.join(command)
+        logger.info("Executing command in background " + vagrant_command_string)
+        
+        def process_runner():
+            subprocess_logger.info("Starting process ...")
+            process = subprocess.Popen(command, env=os.environ, cwd=working_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+            while True:
+                line = process.stdout.readline()
+                if line: subprocess_logger.info(line.strip())
+                else: break
+            exit_code = process.wait()
+            if not exit_on_failure:
+                subprocess_logger.info("Process exited with exit code {0}".format(exit_code))
+            elif exit_code == 130:
+                logger.warn("Exit code 130 received: process {name} is interrupted.".format(name=vagrant_command_string))
+            elif exit_code != 0:
+                logger.error("Error occurred while executing {name} in directory {working_dir}, exit code is {code}. Exiting.".format(name=vagrant_command_string, working_dir=working_dir, code=exit_code))
+                sys.exit(1)
+            else: logger.info("Command '" + vagrant_command_string + "' is successful.")
+        
+        Thread(target=process_runner).start()
+        
 
     def start_recommendation_manager(self, name, orchestrator_ip, recommendation_endpoint):
         """:param name: The name of the recommendation manager agent"""
@@ -40,6 +72,14 @@ class LocalExecutor:
         orchestrator_connection = "tcp://{ip_address}:{port}".format(ip_address=orchestrator_ip, port=self.orchestrator_port)
         recommendation_manager_start = ' '.join(["/vagrant/flume-config/startup/recommendation_manager-agent start", name, recommendation_endpoint, orchestrator_connection, str(self.recommendation_timeout_millis)])
         self.run_on_data_stream_manager(recommendation_manager_start)
+        
+    def start_simple_recommendation_manager(self, name, orchestrator_ip, recommendation_endpoint):
+        logger.info("Starting recommendation manager")
+        orchestrator_connection = "tcp://{ip_address}:{port}".format(ip_address=orchestrator_ip, port=self.orchestrator_port)
+        start_manager_command = ("flume-ng agent --conf /vagrant/flume-config/log4j/recommendation-manager --name a1 --conf-file /vagrant/flume-config/config/generated/kafka_recommendations_generated.conf " 
+        + "-Didomaar.recommendation.hostname={recommendation_endpoint} -Didomaar.orchestrator.hostname={orchestrator_connection} " +
+        " -Didomaar.recommendation.manager.name=rm0 -Didomaar.recommendation.timeout.millis=2000").format(recommendation_endpoint=recommendation_endpoint, orchestrator_connection=orchestrator_connection)
+        self.start_on_data_stream_manager(command=start_manager_command, process_name="reco-manager")
 
     def stop_recommendation_manager(self, name):
         logger.info("Stopping recommendation manager " + name)
