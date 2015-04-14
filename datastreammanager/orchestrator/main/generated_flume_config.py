@@ -10,12 +10,12 @@ class FlumeConfig:
         self.base_dir = base_dir
         self.template_file_name = template_file_name
         template_config_file = os.path.join(base_dir, template_file_name)
-        logger.info("Reading template config file " + str(template_config_file))
+        logger.debug("Reading template config file " + str(template_config_file))
         with open(template_config_file) as input_file:
             self.lines = input_file.readlines()
 
     def set_value(self, key, value):
-        logger.info("Setting {0} to {1}".format(key, value))
+        logger.debug("Setting {0} to {1}".format(key, value))
         self.lines.append(key + '=' + value + '\n')
 
     def generate(self):
@@ -23,6 +23,6 @@ class FlumeConfig:
         if not os.path.exists(generated_config_dir):
             os.makedirs(generated_config_dir)
         generated_config_file = os.path.join(generated_config_dir, self.template_file_name)
-        logger.info("Writing generated config file to " + str(os.path.abspath(generated_config_file)))
+        logger.debug("Writing generated config file to " + str(os.path.abspath(generated_config_file)))
         with open(generated_config_file,'w') as output_file:
             for line in self.lines: output_file.write(line)

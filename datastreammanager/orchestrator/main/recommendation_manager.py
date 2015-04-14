@@ -48,13 +48,13 @@ class RecommendationManager:
         elif target_type == "hdfs":
             template_config_file = os.path.join(self.config_base_dir, 'kafka_recommendations-TO-hdfs.conf')
 
-        logger.info("Reading template config file " + str(template_config_file))
+        logger.debug("Reading template config file " + str(template_config_file))
         with open(template_config_file) as input_file:
             config = input_file.readlines()
 
         if target_type == "fs":
             if not os.path.exists(location):
-                logger.info("{0} doesn't exist, creating it and chown to flume".format(location))
+                logger.debug("{0} doesn't exist, creating it and chown to flume".format(location))
                 os.makedirs(location)
                 os.chown(location, pwd.getpwnam("flume").pw_uid, grp.getgrnam("flume").gr_gid)
             self.set_value(config, "a1.sinks.fs.sink.directory", location)
@@ -73,6 +73,6 @@ class RecommendationManager:
         if not os.path.exists(generated_config_dir):
             os.makedirs(generated_config_dir)
         generated_config_file = os.path.join(generated_config_dir, 'kafka_recommendations_generated.conf')
-        logger.info("Writing generated config file to " + str(os.path.abspath(generated_config_file)))
+        logger.debug("Writing generated config file to " + str(os.path.abspath(generated_config_file)))
         with open(generated_config_file,'w') as output_file:
             for line in config: output_file.write(line)

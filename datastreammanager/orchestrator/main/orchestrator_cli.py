@@ -40,6 +40,8 @@ class OrchestratorCli(cli.Application):
     recommendation_request_thread_count = 1
     #Messages per sec sent to the computing environment. 0 means no limit
     messages_per_sec = 0
+    
+    log_level = 'info'
 
     @cli.switch("--comp-env-dir", str)
     def get_comp_env(self, directory):
@@ -107,8 +109,19 @@ class OrchestratorCli(cli.Application):
         self.data_to_recommendations = True
         self.no_control_messages = True
         if not self.computing_environment_url.scheme in ['http', 'https']: raise "For Newsreel, the computing environment URL must have scheme http or https."
-
+        
+    @cli.switch("--log-level", str)
+    def get_log_level(self, log_level):
+        """Log level"""
+        self.log_level = log_level
+        
+    def setup_logging(self):
+        root_logger = logging.getLogger()
+        root_logger.setLevel(self.log_level.upper())
+        root_logger.info("Log level has been set to " + self.log_level)
+ 
     def main(self):
+        self.setup_logging()
         if self.data_source is not None:
             logger.info("Data source: {0}".format(self.data_source))
         else:
@@ -117,15 +130,15 @@ class OrchestratorCli(cli.Application):
             if self.test_uri is not None: logger.info("Test data URI: %s" % self.test_uri)
             else: raise "No test URI is set."
             
-        logger.info("Computing environment path: %s" % self.comp_env)
+        logger.debug("Computing environment path: %s" % self.comp_env)
         basedir = os.path.abspath("../../")
-        logger.info("Idomaar base path: %s" % basedir)
+        logger.debug("Idomaar base path: %s" % basedir)
 
         config_file_location = os.path.join('/vagrant', self.config_file)
         with open(config_file_location) as input_file:
             config_json=input_file.read()
         config_data = json.loads(config_json)
-        logger.info("Configuration loaded from file {0} : {1}".format(config_file_location, config_data))
+        logger.debug("Configuration loaded from file {0} : {1}".format(config_file_location, config_data))
         if 'recommendation_request_thread_count' in config_data: self.recommendation_request_thread_count = config_data['recommendation_request_thread_count']
         if 'messages_per_sec' in config_data: self.messages_per_sec = config_data['messages_per_sec']
 
@@ -135,7 +148,7 @@ class OrchestratorCli(cli.Application):
             executor = VagrantExecutor(reco_engine_hostport='192.168.22.100:5560', orchestrator_port=2761,
                                            datastream_manager_working_dir=datastreammanager, recommendation_timeout_millis=4000, computing_env_dir=computing_env_dir)
         else:
-            logger.info("Using local executor.")
+            logger.debug("Using local executor.")
             datastreammanager = "/vagrant"
             executor = LocalExecutor(reco_engine_hostport='192.168.22.100:5560', orchestrator_port=2761,
                                                datastream_manager_working_dir=datastreammanager, recommendation_timeout_millis=4000)
@@ -150,8 +163,8 @@ class OrchestratorCli(cli.Application):
 
         logger.info("Finished.")
 
-def setup_logging(logger_to_conf):
-    logger_to_conf.setLevel("DEBUG")
+def initial_logging(logger_to_conf):
+    logger_to_conf.setLevel("INFO")
     logger_to_conf.propagate = False
     handler = logging.StreamHandler(sys.stdout)
 
@@ -174,6 +187,5 @@ def setup_logging(logger_to_conf):
 
 
 if __name__ == '__main__':
-    root_logger = logging.getLogger()
-    setup_logging(root_logger)
+    initial_logging(logging.getLogger())
     OrchestratorCli.run()

@@ -144,7 +144,7 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 		}
-		logger.info("Sending event [" + new String(event.getBody()) + "] down the channel.");
+		logger.debug("Sending event [" + new String(event.getBody()) + "] down the channel.");
 		return event;
 	}
 

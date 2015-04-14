@@ -42,7 +42,7 @@ class HttpComputingEnvironmentProxy:
         timeout_secs = timeout_millis / 1000 if timeout_millis is not None else None
         response = requests.get(get_address, data=data, timeout=timeout_secs)
         status_code = response.status_code
-        logger.info("Received status code {0}, response {1}".format(status_code, response.text))
+        logger.debug("Received status code {0}, response {1}".format(status_code, response.text))
         if status_code != httplib.OK:
             raise "Computing environment indicated error, HTTP code {0}".format(status_code)
         return response.text
@@ -71,7 +71,7 @@ class HttpComputingEnvironmentProxy:
         train_message = ['TRAIN', zookeeper_hostport, kafka_topic]
         result = self.respond(train_message)
         lines = result.split('\n')
-        logger.info("First lines of response are " + '\n'.join(lines[0:3]))
+        logger.debug("First lines of response are " + '\n'.join(lines[0:3]))
         status_code = lines[0]
         recommendation_endpoint = lines[1]
         logger.info("Status code {0}, recommendation endpoint {1}".format(status_code, recommendation_endpoint))

@@ -17,7 +17,7 @@ class ZmqComputingEnvironmentProxy:
 
     def connect(self, timeout_secs):
         self.comp_env_socket.connect(self.address)
-        logger.info("Connected to " + self.address)
+        logger.debug("Connected to " + self.address)
         logger.info("Waiting at most {secs} secs for computing environment to get ready ...".format(secs=timeout_secs))
         try:
             message = self.respond(request="HELLO", timeout_millis=timeout_secs*1000)
@@ -48,7 +48,7 @@ class ZmqComputingEnvironmentProxy:
         else: self.comp_env_socket.send(request)
         poller = zmq.Poller()
         poller.register(self.comp_env_socket, zmq.POLLIN) # POLLIN for recv, POLLOUT for send
-        logger.info("Sending request {0} to computing environment.".format(request))
+        logger.debug("Sending request {0} to computing environment.".format(request))
         logger.info("Waiting {time} for computing environment to answer ...".format(time=str(timeout_millis / 1000) + " secs" if timeout_millis else "indefinitely"))
         poll_result = poller.poll(timeout_millis)
         if not poll_result:
