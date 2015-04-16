@@ -31,7 +31,7 @@ class OrchestratorCli(cli.Application):
     comp_env = None
     recommendation_target = 'fs:/tmp/recommendations'
     data_topic = 'data'
-    recommendations_topic = 'recommendations'
+    recommendation_requests_topic = 'recommendation-requests'
     config_file = 'default-config.json'
 
     #Configuration parameters from JSON config file

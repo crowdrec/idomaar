@@ -65,8 +65,8 @@ class Orchestrator(object):
             now = datetime.datetime.now()
             suffix = "{mo}{d}-{h}{mi}{sec}".format(y=now.year,mo=now.month,d=now.day,h=now.hour,mi=now.minute,sec=now.second)
             self.config.data_topic = "data-" + suffix
-            self.config.recommendations_topic = "recommendations-" + suffix
-        logger.info("Using Kafka topic names: {0} for data, {1} for recommendations".format(self.config.data_topic, self.config.recommendations_topic))
+            self.config.recommendation_requests_topic = "recommendation-requests-" + suffix
+        logger.info("Using Kafka topic names: {0} for data, {1} for recommendations requests".format(self.config.data_topic, self.config.recommendation_requests_topic))
 
     def feed_training_data(self):
         training_uri = self.config.training_uri
@@ -77,12 +77,12 @@ class Orchestrator(object):
 
     def feed_test_data(self):
         if self.config.data_to_recommendations: 
-            logger.info("Data treated as recommendation requests, sending directly ")
+            logger.info("Data treated as recommendation requests, sending directly to topic " + self.config.recommendation_requests_topic)
             config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name='idomaar-TO-kafka-direct.conf')
-            config.set_value('agent.sinks.kafka_sink.topic', self.config.recommendations_topic)
+            config.set_value('agent.sinks.kafka_sink.topic', self.config.recommendation_requests_topic)
             config.set_value('agent.sources.idomaar_source.fileName', self.config.data_source)
             config.generate()
-            logger.info("Start feeding data to Flume, Kafka sink topic is {0}".format(self.config.recommendations_topic))
+            logger.info("Start feeding data to Flume, Kafka sink topic is {0}".format(self.config.recommendation_requests_topic))
             test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name agent --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf"
             self.executor.start_on_data_stream_manager(command=test_data_feed_command, process_name="to-kafka-flume")
         else:
@@ -99,7 +99,7 @@ class Orchestrator(object):
     def create_flume_config(self, template_file_name):
         config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name=template_file_name)
         config.set_value('a1.sinks.kafka_data.topic', self.config.data_topic)
-        config.set_value('a1.sinks.kafka_rec.topic', self.config.recommendations_topic)
+        config.set_value('a1.sinks.kafka_rec.topic', self.config.recommendation_requests_topic)
         config.generate()
         
     def run(self):
@@ -137,7 +137,7 @@ class Orchestrator(object):
         
         
         manager = self.reco_managers_by_name.itervalues().next()
-        manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol, recommendations_topic=self.config.recommendations_topic)
+        manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol, recommendations_topic=self.config.recommendation_requests_topic)
         
         self.start_recommendation_manager(orchestrator_ip, recommendation_endpoint)
         

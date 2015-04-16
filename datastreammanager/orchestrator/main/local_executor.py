@@ -113,7 +113,7 @@ class LocalExecutor:
             logger.info("Creating data topic ...")
             self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.data_topic), exit_on_failure=True, capture_output=True)
             logger.info("Creating recommendation topic ...")
-            self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.recommendations_topic), exit_on_failure=True, capture_output=True)
+            self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.recommendation_requests_topic), exit_on_failure=True, capture_output=True)
         else:
             topic_info = "/opt/apache/kafka/bin/kafka-topics.sh --zookeeper {zookeeper} --topic recommendations --describe".format(zookeeper=zookeeper_hostport)
             result = self.run_on_data_stream_manager(topic_info, exit_on_failure=False, capture_output=True, default_relog_level='debug')
@@ -122,7 +122,7 @@ class LocalExecutor:
             if recommendation_partitions > num_partitions:
                 logger.info("Setting the number of partitions of 'recommendation' topic to at least " + str(recommendation_partitions))
                 topic_set = "/opt/apache/kafka/bin/kafka-topics.sh --alter --zookeeper {zookeeper_hostport} --topic {recommendations} --partitions {partitions} ".\
-                                format(zookeeper_hostport=zookeeper_hostport, partitions=recommendation_partitions, recommendations=config.recommendations_topic)
+                                format(zookeeper_hostport=zookeeper_hostport, partitions=recommendation_partitions, recommendations=config.recommendation_requests_topic)
                 self.run_on_data_stream_manager(topic_set, default_relog_level='debug')
             else: logger.debug("Required num partitions " + str(recommendation_partitions) + ", so leaving it as it is.")
 
