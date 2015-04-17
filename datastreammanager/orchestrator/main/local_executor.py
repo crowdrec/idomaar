@@ -10,7 +10,7 @@ datastream_logger = logging.getLogger("datastream")
 
 class LocalExecutor:
     """
-    Run vagrant commands to actually execute operations initiated by the orchestrator.
+    Run local commands to actually execute operations initiated by the orchestrator.
     """
 
     def __init__(self, reco_engine_hostport, orchestrator_port, datastream_manager_working_dir, recommendation_timeout_millis):
@@ -36,10 +36,10 @@ class LocalExecutor:
         if capture_output: return result
         else: return result[0]
         
-    def start_on_data_stream_manager(self, command, process_name, exit_on_failure=True):
+    def start_on_data_stream_manager(self, command, process_name, exit_on_failure=True, sudo=True):
         """Start a command asynchronously on the data stream manager VM."""
         command_list = command.split(" ")
-        command_list.insert(0, "sudo")
+        if sudo: command_list.insert(0, "sudo")
         result = self.execute_in_background(command=command_list, working_dir=self.datastream_manager_working_dir,
                                      subprocess_logger=logging.getLogger("bg:" + process_name), exit_on_failure=exit_on_failure)
     
@@ -68,8 +68,6 @@ class LocalExecutor:
         return output_lines
     
     def execute_in_background(self, command, working_dir, subprocess_logger, exit_on_failure):
-        vagrant_command_string = ' '.join(command)
-        logger.debug("Executing command in background " + vagrant_command_string)
         Thread(target=lambda: self.process_runner(command, working_dir, subprocess_logger, exit_on_failure)).start()
 
     def start_recommendation_manager(self, name, orchestrator_ip, recommendation_endpoint):

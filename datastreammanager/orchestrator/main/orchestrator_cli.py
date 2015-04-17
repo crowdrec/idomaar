@@ -21,17 +21,22 @@ class OrchestratorCli(cli.Application):
 
     new_topic = cli.Flag(["--new-topic"], help = "If given, new Kafka topics will be created for data and recommendations feeds.", excludes = ['--data-topic', '--recommendations-topic'] )
     
-    data_to_recommendations = cli.Flag(["--data-to-recommendations"], requires = ["--data-source"], help = "If given, data from the source will be treated as " +
-    " direct recommendations requests, and sent to the computing environment (via Kafka). Requires the --data-source switch. Implied by the --newsreel switch.")
-    
     skip_training_cycle = cli.Flag(["--skip-training"], help = "If given, the training phase in the orchestrator lifecycle is skipped.")
     
     no_control_messages = cli.Flag(["--no-control-messages", '-n'], help = "If given, the orchestrator won't send control messages to the computing environment.")
     
     comp_env = None
     recommendation_target = 'fs:/tmp/recommendations'
+    
+    #The data_topic is meaningless and should be removed
     data_topic = 'data'
+    input_topic = 'input'
     recommendation_requests_topic = 'recommendation-requests'
+    ground_truth_topic = 'ground-truth'
+    
+    input_data = 'split'
+    
+    
     config_file = 'default-config.json'
 
     #Configuration parameters from JSON config file
@@ -40,6 +45,7 @@ class OrchestratorCli(cli.Application):
     recommendation_request_thread_count = 1
     #Messages per sec sent to the computing environment. 0 means no limit
     messages_per_sec = 0
+    
     
     log_level = 'info'
 
@@ -100,13 +106,23 @@ class OrchestratorCli(cli.Application):
         """The Kafka topic where recommendations are fed."""
         self.recommendations_topic = topic
         
+    @cli.switch("--input-data", str)
+    def get_input_data(self, input_data, requires = ["--data-source"]):
+        """Specifies how to treat input data from the source:
+            test: feed to the Kafka test topic
+            split: feed to the splitter
+            recommend: feed to the Kafka recommendation requests topic
+         Requires the --data-source switch."""
+        if input_data not in ['test', 'split', 'recommend']: raise 'Input data must be either "test", "split" or "recommend".'
+        self.input_data = input_data 
+        
     @cli.switch("--newsreel")
     def get_newsreel(self, requires=['--data-source']):
-        """Use the settings relevant for the Newsreel competition Task 2. Equivalent to the switches --skip-training --data-to-recommendations --no-control-messages. 
+        """Use the settings relevant for the Newsreel competition Task 2. Equivalent to the switches --skip-training --input-data split --no-control-messages. 
         It will check that the computing environment communication protocol is HTTP or HTTPS."""
         self.newsreel = True
         self.skip_training_cycle = True
-        self.data_to_recommendations = True
+        self.input_data = "split"
         self.no_control_messages = True
         if not self.computing_environment_url.scheme in ['http', 'https']: raise "For Newsreel, the computing environment URL must have scheme http or https."
         

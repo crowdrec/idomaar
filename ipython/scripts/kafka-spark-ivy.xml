@@ -1,0 +1,10 @@
+<ivy-module version="2.0">
+    <info organisation="gravity" module="test"/>
+    <dependencies>
+        <dependency org="org.apache.spark" name="spark-streaming-kafka_2.10" rev="1.2.0" />
+        <dependency org="org.apache.zookeeper" name="zookeeper" rev="3.4.6" />
+        <dependency org="xerces" name="xercesImpl" rev="2.11.0" />
+        <dependency org="xerces" name="xerces" rev="2.4.0" />
+        <dependency org="xalan" name="xalan" rev="2.7.2" />
+    </dependencies>
+</ivy-module>

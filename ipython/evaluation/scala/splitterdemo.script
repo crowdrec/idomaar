@@ -1,0 +1,7 @@
+:load StreamingTest.scala
+def env(name: String) = System.getenv(name)
+val config = StreamingTestConfig(env("ZOOKEEPER_CONNECTION"), env("KAFKA_CONNECTION"), env("INPUT_TOPIC"), env("RECOMMENDATION_REQUESTS_TOPIC"),env("GROUND_TRUTH_TOPIC"))
+println("Configuration " + config)
+val streamingTest = StreamingTest(sc, config)
+Runtime.getRuntime.addShutdownHook(new Thread() { override def run() { streamingTest.stop }})
+streamingTest.run()

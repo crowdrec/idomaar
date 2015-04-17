@@ -70,6 +70,13 @@ exec {
      user => "ipython",
      environment => [ "HOME=/home/ipython" ] 
   }
+  
+exec {
+    'install_kafka_spark':
+     command => '/vagrant/scripts/install_kafka_spark.sh',
+     path => "/bin:/usr/sbin:/usr/bin",
+}
+
 
 exec {
     'disable_spark_logging':
