@@ -19,7 +19,8 @@ IP=$(ifconfig  | grep 'inet addr:'| grep 168 | grep 192|cut -d: -f2 | awk '{ pri
 #sed 's/broker.id=0/'broker.id=$1'/' /opt/apache/kafka/config/server.properties > /tmp/prop1.tmp
 sed 's/log.dirs=\/tmp\/kafka-logs/'log.dirs=\\/var\\/log\\/kafka'/' /opt/apache/kafka/config/server.properties > /tmp/prop1.tmp
 sed 's/#advertised.host.name=<hostname routable by clients>/'advertised.host.name=$IP'/' /tmp/prop1.tmp > /tmp/prop2.tmp
-sed 's/#host.name=localhost/'host.name=$IP'/' /tmp/prop2.tmp  > /opt/apache/kafka/config/server-vagrant.properties
+sed 's/num\.partitions=2/num\.partitions=1/' /tmp/prop2.tmp > /tmp/prop3.tmp
+sed 's/#host.name=localhost/'host.name=$IP'/' /tmp/prop3.tmp  > /opt/apache/kafka/config/server-vagrant.properties
 
 
 cp /vagrant/vagrant/cloudera/init.d/kafka /etc/init.d/
