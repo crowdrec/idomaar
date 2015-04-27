@@ -26,6 +26,7 @@ class OrchestratorCli(cli.Application):
     no_control_messages = cli.Flag(["--no-control-messages", '-n'], help = "If given, the orchestrator won't send control messages to the computing environment.")
     
     comp_env = None
+    data_source = None
     recommendation_target = 'fs:/tmp/recommendations'
     
     #The data_topic is meaningless and should be removed
@@ -79,11 +80,13 @@ class OrchestratorCli(cli.Application):
     def get_training_uri(self, training_uri):
         """The location of the training data."""
         self.training_uri = training_uri
+        self.input_data = 'test'
 
     @cli.switch("--test-uri", str)
     def get_test_uri(self, test_uri):
         """The location of the test data."""
         self.test_uri = test_uri
+        self.input_data = 'test'
         
     @cli.switch("--data-source", str, excludes=['--training-uri', '--test-uri'])
     def get_data_source(self, data_source):

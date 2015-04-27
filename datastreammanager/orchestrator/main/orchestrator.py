@@ -109,7 +109,7 @@ class Orchestrator(object):
         config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name=template_file_name)
         config.set_value('a1.sinks.kafka_data.topic', self.config.data_topic)
         config.set_value('a1.sinks.kafka_rec.topic', self.config.recommendation_requests_topic)
-        config.generate()
+        config.generate(template_file_name)
         
     def run(self):
         try:
