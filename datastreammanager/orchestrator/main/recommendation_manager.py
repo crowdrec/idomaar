@@ -30,7 +30,7 @@ class RecommendationManager:
     def set_value(self, config, key, value):
         config.append(key + '=' + value + '\n')
 
-    def create_configuration(self, recommendation_target, communication_protocol, recommendations_topic):
+    def create_configuration(self, recommendation_target, communication_protocol, recommendations_topic, recommendation_results_topic):
         """
         :param recommendation_target: The target where recommendation results are written.
         :param communication_protocol: tcp or http
@@ -68,6 +68,7 @@ class RecommendationManager:
         else: raise "Recommendation manager communication protocol must be either tcp or http."
 
         self.set_value(config, 'a1.sources.r1.topic', recommendations_topic)
+        self.set_value(config, 'a1.sinks.kafka_sink.topic', recommendation_results_topic)
 
         generated_config_dir = os.path.join(self.config_base_dir, 'generated')
         if not os.path.exists(generated_config_dir):

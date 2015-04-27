@@ -32,6 +32,7 @@ class OrchestratorCli(cli.Application):
     data_topic = 'data'
     input_topic = 'input'
     recommendation_requests_topic = 'recommendation-requests'
+    recommendation_results_topic = 'recommendation-results'
     ground_truth_topic = 'ground-truth'
     
     input_data = 'split'

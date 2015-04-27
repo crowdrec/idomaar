@@ -5,6 +5,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.httpclient.HttpClient;
@@ -81,6 +82,7 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 		String response = null;
 		try {
 			String body = new String(event.getBody());
+			if (body.equals("<END>")) return event;
 			String[] token = body.split("\t");
 			String type = token[0];
 			String property = token[3];
@@ -98,6 +100,7 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 			}
 			
 			PostMethod postMethod = null;
+			long responseTimeMillis = 1;
 			try {
 				StringRequestEntity requestEntity = new StringRequestEntity(
 						urlParameters, "application/x-www-form-urlencoded", "UTF-8");
@@ -107,8 +110,10 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 				postMethod.setParameter("useCache", "false");
 				postMethod.setRequestEntity(requestEntity);
 
+				long startTime = System.currentTimeMillis();
 				int statusCode = httpClient.executeMethod(postMethod);
 				response = postMethod.getResponseBodyAsString();
+				responseTimeMillis = System.currentTimeMillis() - startTime;
 
 				response = response.trim();
 			} catch (IOException e) {
@@ -132,19 +137,21 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 				String itemId = data[2];
 				String domainId = data[3];
 				String timeStamp = data[4];
+				String responseTime = Long.toString(responseTimeMillis);
 
 				String responseLogLine = 
-					"prediction\t" + requestId + "\t" + timeStamp + "\t" + itemId+ "\t" + userId + "\t" + domainId + "\t" + response;
+					"prediction\t" + requestId + "\t" + timeStamp + "\t" + responseTime + "\t" + itemId+ "\t" + userId + "\t" + domainId + "\t" + response;
 				
 				event.setBody(responseLogLine.getBytes(Charset.forName("UTF-8")));	
 
 			}
-			event.setBody(response.getBytes(Charset.forName("UTF-8")));
+			else event = null;
 
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 		}
-		logger.debug("Sending event [" + new String(event.getBody()) + "] down the channel.");
+		if (event != null) event.setHeaders(new HashMap<String, String>());
+		logger.debug("Sending event [" + (event == null ? "null" : new String(event.getBody())) + "] down the channel.");
 		return event;
 	}
 
@@ -155,7 +162,7 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 		for (Event event : events) {
 			// Intercept any event
 			Event interceptedEvent = intercept(event);
-			interceptedEvents.add(interceptedEvent);
+			if (interceptedEvent != null) interceptedEvents.add(interceptedEvent);
 		}
 
 		return interceptedEvents;

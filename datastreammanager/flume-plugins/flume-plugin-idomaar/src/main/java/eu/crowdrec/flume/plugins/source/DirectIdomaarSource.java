@@ -61,6 +61,7 @@ public class DirectIdomaarSource extends AbstractSource implements EventDrivenSo
 				while ((line = getNextLine()) != null && batch.size() < batchSize) batch.add(line);
 				List<Event> eventBatch = Lists.newArrayList();
 				for (String inputLine: batch) eventBatch.add(EventBuilder.withBody(inputLine, charset, header));
+				if (batch.size() < batchSize) eventBatch.add(EventBuilder.withBody("<END>", charset, header));
 				getChannelProcessor().processEventBatch(eventBatch);
 				if (batch.size() < batchSize) stop();
 			}

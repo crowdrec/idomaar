@@ -18,11 +18,12 @@ class FlumeConfig:
         logger.debug("Setting {0} to {1}".format(key, value))
         self.lines.append(key + '=' + value + '\n')
 
-    def generate(self):
+    def generate(self, output_file_name):
         generated_config_dir = os.path.join(self.base_dir, 'generated')
         if not os.path.exists(generated_config_dir):
             os.makedirs(generated_config_dir)
-        generated_config_file = os.path.join(generated_config_dir, self.template_file_name)
+        if output_file_name is None: output_file_name = self.template_file_name
+        generated_config_file = os.path.join(generated_config_dir, output_file_name)
         logger.debug("Writing generated config file to " + str(os.path.abspath(generated_config_file)))
         with open(generated_config_file,'w') as output_file:
             for line in self.lines: output_file.write(line)

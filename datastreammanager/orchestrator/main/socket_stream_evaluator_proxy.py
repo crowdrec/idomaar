@@ -3,12 +3,11 @@ from generated_flume_config import FlumeConfig
 
 logger = logging.getLogger("kafka-input-evaluator")
 
-class EvaluatorProxy():
+class SocketStreamEvaluatorProxy():
     
     def __init__(self, executor, idomaar_environment):
         self.executor = executor
         self.idomaar_environment = idomaar_environment
-        
         
     def start_input_feed(self):
         logger.info("Data is sent to data splitter via Kafka topic " + self.config.input_topic)
