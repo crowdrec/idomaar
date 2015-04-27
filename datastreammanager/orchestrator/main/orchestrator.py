@@ -141,7 +141,7 @@ class Orchestrator(object):
         return environment
     
     def start_evaluator(self, environment):
-        evaluator_command = 'java -jar /vagrant/demo-evaluator/target/demo-evaluator-0.0.1-SNAPSHOT-jar-with-dependencies.jar'
+        evaluator_command = 'java -jar /vagrant/newsreel-evaluator/target/newsreel-evaluator-0.0.1-SNAPSHOT-jar-with-dependencies.jar'
         command = evaluator_command + " 192.168.22.5:2181 192.168.22.5:9092 {results_topic} {ground_topic} {output_topic}".format(results_topic=environment.recommendation_results_topic,
                                                                                                                                  ground_topic=environment.ground_truth_topic,
                                                                                                                                  output_topic='output')
@@ -159,7 +159,7 @@ class Orchestrator(object):
         self.executor.start_datastream()
         self.executor.configure_datastream(self.config.recommendation_request_thread_count, environment.zookeeper_hostport, config=self.config)
         self.executor.start_computing_environment()
-        self.comp_env_proxy.connect(timeout_secs=20)
+        self.comp_env_proxy.connect(timeout_secs=5)
 
         if not self.config.skip_training_cycle:
             self.feed_training_data()
@@ -186,28 +186,29 @@ class Orchestrator(object):
         
         self.start_evaluator(environment)
 
-        if not self.config.no_control_messages: self.comp_env_proxy.send_test()
-        logger.info("INFO: recommendations correctly generated, waiting for finished message from recommendation manager agents")
+        if not self.config.no_control_messages: 
+            self.comp_env_proxy.send_test()
+            logger.info("INFO: recommendations correctly generated, waiting for finished message from recommendation manager agents")
 
-        reco_manager_message = self.reco_manager_socket.recv_multipart()
-        logger.info("Message from recommendation manager: %s " % reco_manager_message)
-        self.reco_manager_socket.send("OK")
-        if reco_manager_message[0] == "FINISHED":
-            reco_manager_name = reco_manager_message[1] if len(reco_manager_message) > 1 else ""
-            reco_manager = self.reco_managers_by_name.get(reco_manager_name)
-            if reco_manager is not None:
-                logger.info("Recommendation manager " + reco_manager_name + "has finished processing recommendation queue.")
-                logger.warn("Waiting 20 secs to work around Flume issue FLUME-1318.")
-                time.sleep(20)
-                logger.info("Shutting all managers down ...")
-                for manager in self.reco_managers_by_name.itervalues(): manager.stop()
-            else:
-                logger.error("Received FINISHED message from a recommendation manager named " + reco_manager_name + " but no record of this manager is found.")
-
-        ## TODO RECEIVE SOME STATISTICS FROM THE COMPUTING ENVIRONMENT
-
-        # TODO: check if data stream channel is empty (http metrics)
-        # TODO: test/evaluate the output
+            reco_manager_message = self.reco_manager_socket.recv_multipart()
+            logger.info("Message from recommendation manager: %s " % reco_manager_message)
+            self.reco_manager_socket.send("OK")
+            if reco_manager_message[0] == "FINISHED":
+                reco_manager_name = reco_manager_message[1] if len(reco_manager_message) > 1 else ""
+                reco_manager = self.reco_managers_by_name.get(reco_manager_name)
+                if reco_manager is not None:
+                    logger.info("Recommendation manager " + reco_manager_name + "has finished processing recommendation queue.")
+                    logger.warn("Waiting 20 secs to work around Flume issue FLUME-1318.")
+                    time.sleep(20)
+                    logger.info("Shutting all managers down ...")
+                    for manager in self.reco_managers_by_name.itervalues(): manager.stop()
+                else:
+                    logger.error("Received FINISHED message from a recommendation manager named " + reco_manager_name + " but no record of this manager is found.")
+    
+            ## TODO RECEIVE SOME STATISTICS FROM THE COMPUTING ENVIRONMENT
+    
+            # TODO: check if data stream channel is empty (http metrics)
+            # TODO: test/evaluate the output
 
     def close(self):
         logger.info("Shutting down recommendation managers ...")

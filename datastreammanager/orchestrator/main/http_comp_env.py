@@ -2,6 +2,7 @@ import httplib
 import logging
 import requests
 from orchestrator_exceptions import TimeoutException
+from requests.adapters import HTTPAdapter
 
 logger = logging.getLogger("computing-environment-http")
 
@@ -40,7 +41,15 @@ class HttpComputingEnvironmentProxy:
     def get_to_address(self, get_address, data, timeout_millis):
         logger.info("GET to " + get_address)
         timeout_secs = timeout_millis / 1000 if timeout_millis is not None else None
-        response = requests.get(get_address, data=data, timeout=timeout_secs)
+        retry_counter = 5
+        while retry_counter > 0:
+            try:
+                response = requests.get(get_address, data=data, timeout=timeout_secs)
+                break
+            except Exception as exception:
+                logger.warn("No or bad response from " + get_address + ", retrying.", exc_info=exception)
+                retry_counter -= 1
+        if retry_counter == 0: raise "No answer from computing environment."
         status_code = response.status_code
         logger.debug("Received status code {0}, response {1}".format(status_code, response.text))
         if status_code != httplib.OK:

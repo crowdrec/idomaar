@@ -50,10 +50,13 @@ public class DirectIdomaarSource extends AbstractSource implements EventDrivenSo
 
 	private BufferedReader reader;
 	
+	private volatile boolean endSent;
+	
 	private class EventCreator implements Runnable {
 
 		@Override
 		public void run() {
+			endSent = false;
 			Map<String, String> header = Maps.newHashMap();
 			while (getLifecycleState() == LifecycleState.START) {
 				List<String> batch = Lists.newArrayList(); 
@@ -61,7 +64,11 @@ public class DirectIdomaarSource extends AbstractSource implements EventDrivenSo
 				while ((line = getNextLine()) != null && batch.size() < batchSize) batch.add(line);
 				List<Event> eventBatch = Lists.newArrayList();
 				for (String inputLine: batch) eventBatch.add(EventBuilder.withBody(inputLine, charset, header));
-				if (batch.size() < batchSize) eventBatch.add(EventBuilder.withBody("<END>", charset, header));
+				if (batch.size() < batchSize && !endSent) {
+					logger.info("Sending <END>");
+					eventBatch.add(EventBuilder.withBody("<END>", charset, header));
+					endSent = true;
+				}
 				getChannelProcessor().processEventBatch(eventBatch);
 				if (batch.size() < batchSize) stop();
 			}

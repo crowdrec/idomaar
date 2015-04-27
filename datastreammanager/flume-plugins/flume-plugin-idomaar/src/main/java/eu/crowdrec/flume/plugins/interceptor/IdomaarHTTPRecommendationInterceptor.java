@@ -81,8 +81,14 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 	public Event intercept(Event event) {
 		String response = null;
 		try {
-			String body = new String(event.getBody());
-			if (body.equals("<END>")) return event;
+			String body = new String(event.getBody(), "UTF-8");
+//			logger.info("Input event body: {}", body);
+			if (body != null && body.trim().contains("END")) {
+				logger.info("Received <END> event, sending it down the channel.");
+				event.setHeaders(new HashMap<String, String>());
+				event.setBody("<END>".getBytes(Charset.forName("UTF-8")));
+				return event;
+			}
 			String[] token = body.split("\t");
 			String type = token[0];
 			String property = token[3];

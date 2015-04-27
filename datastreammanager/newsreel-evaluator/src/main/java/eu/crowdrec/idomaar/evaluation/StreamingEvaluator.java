@@ -188,36 +188,9 @@ public class StreamingEvaluator implements Runnable {
 	 */
 	@Override
 	public void run() {
-		
-		// define default settings for simplified testing
-//		String predictionFileName = "";
-//		String groundTruthFileName = "";
-
 		// define the default window size
 		long windowSizeInMillis = 5L * 60L * 1000L;
 		
-		// check the parameters
-//		if (args.length < 0 || args.length > 3) {
-//			System.out.println("usage: java Evaluator <predictionFileName> <groundTruthFileName> [<windowSizeInMillis>]");
-//			//System.exit(0);
-//			System.out.println(".. using the default values.");
-//		}
-//		
-		// set the parameter values
-//		if (args.length > 0) {
-//			predictionFileName = args[0];
-//		}
-//		if (args.length > 1) {
-//			groundTruthFileName = args[1];
-//		}
-//		if (args.length > 2) {
-//			windowSizeInMillis = Long.parseLong(args[2]);
-//		}
-//		
-//		// inform the user that the evaluator has started
-//		System.out.println("Evaluation is running ...");
-//		System.out.println("predictionFileName= " + predictionFileName);
-//		System.out.println("groundTruthFileName= " + groundTruthFileName);
 		System.out.println("windowSizeInMillis= " + windowSizeInMillis);
 		
 		// initialize the groundTruth linked list
@@ -228,13 +201,17 @@ public class StreamingEvaluator implements Runnable {
 			throw new RuntimeException(exception);
 		}
 
-		// initialize the prediction list that should be evaluated
-//		BufferedReader br = null;
 		try {
-//			br = new BufferedReader(new FileReader(predictionFileName));
 			while (true) {
-				String line = predictionQueue.poll(20, TimeUnit.SECONDS);
-				if (line == null || line.equals("<END>")) break;
+				String line = predictionQueue.poll(60, TimeUnit.SECONDS);
+				if (line == null) {
+					System.out.println("Evaluator: no recommendations received for 60 secs, stopping.");
+					break;
+				}
+				if (line.trim().contains("END")) {
+					System.out.println("Evaluator received END sign, stopping.");
+					break;
+				}
 				try {
 					// ignore comments and invalid lines
 					if (line.length() < 2 || line.startsWith("#")) {
@@ -327,15 +304,7 @@ public class StreamingEvaluator implements Runnable {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-		} finally {
-//			if (br != null) {
-//				try {
-//					br.close();
-//				} catch (Exception ignored) {
-//				}
-//			}
-		}
-
+		} 
 		// close and cleanup
 		try {
 			lfc.close();

@@ -68,7 +68,9 @@ class LocalExecutor:
         return output_lines
     
     def execute_in_background(self, command, working_dir, subprocess_logger, exit_on_failure):
-        Thread(target=lambda: self.process_runner(command, working_dir, subprocess_logger, exit_on_failure)).start()
+        thread = Thread(target=lambda: self.process_runner(command, working_dir, subprocess_logger, exit_on_failure))
+        thread.daemon = True
+        thread.start()
 
     def start_recommendation_manager(self, name, orchestrator_ip, recommendation_endpoint):
         """:param name: The name of the recommendation manager agent"""
