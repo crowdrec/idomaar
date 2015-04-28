@@ -27,7 +27,7 @@ class ReplicatingEvaluatorProxy():
         self.executor.start_on_data_stream_manager(command=test_data_feed_command, process_name="to-topic-" + conf_file_suffix)
         
     def guess_file_format(self, file_name):
-        if file_name.endswith('gz') or file_name.endswith('.gzip'): return 'gzip'
+        if file_name.endswith('.gz') or file_name.endswith('.gzip'): return 'gzip'
         else: return 'plain'
         
         

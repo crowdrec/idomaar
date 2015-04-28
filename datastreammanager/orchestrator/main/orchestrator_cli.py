@@ -40,6 +40,7 @@ class OrchestratorCli(cli.Application):
     
     
     config_file = 'default-config.json'
+    num_threads = 10
 
     #Configuration parameters from JSON config file
 
@@ -129,6 +130,11 @@ class OrchestratorCli(cli.Application):
         self.input_data = "split"
         self.no_control_messages = True
         if not self.computing_environment_url.scheme in ['http', 'https']: raise "For Newsreel, the computing environment URL must have scheme http or https."
+        
+    @cli.switch("--num-threads", int)
+    def get_num_threads(self, num_threads):
+        """Use the specified number of threads (processes) for requesting recommendations."""
+        self.num_threads = num_threads 
         
     @cli.switch("--log-level", str)
     def get_log_level(self, log_level):

@@ -80,7 +80,7 @@ class LocalExecutor:
         self.run_on_data_stream_manager(recommendation_manager_start)
         
     def start_simple_recommendation_manager(self, name, orchestrator_ip, recommendation_endpoint):
-        logger.info("Starting recommendation manager")
+        logger.info("Starting recommendation manager " + name)
         orchestrator_connection = "tcp://{ip_address}:{port}".format(ip_address=orchestrator_ip, port=self.orchestrator_port)
         start_manager_command = ("flume-ng agent --conf /vagrant/flume-config/log4j/recommendation-manager --name a1 --conf-file /vagrant/flume-config/config/generated/kafka_recommendations_generated.conf " 
         + "-Didomaar.recommendation.hostname={recommendation_endpoint} -Didomaar.orchestrator.hostname={orchestrator_connection} " +
@@ -109,7 +109,7 @@ class LocalExecutor:
          * Increase the number of kafka topics, if necessary
         """
         if config.new_topic:
-            topic_create_template = "/opt/apache/kafka/bin/kafka-topics.sh --zookeeper {zookeeper} --create --topic {topic} --partitions 1 --replication-factor 1"
+            topic_create_template = "/opt/apache/kafka/bin/kafka-topics.sh --zookeeper {zookeeper} --create --topic {topic} --partitions 10 --replication-factor 1"
             logger.info("Creating data topic ...")
             self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.data_topic), exit_on_failure=True, capture_output=True)
             logger.info("Creating recommendation topic ...")

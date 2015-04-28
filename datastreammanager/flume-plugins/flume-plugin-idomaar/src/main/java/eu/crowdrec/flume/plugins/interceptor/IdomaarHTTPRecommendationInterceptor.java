@@ -54,6 +54,8 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 	 * hostName and port as string 
 	 */
 	private String _hostnameAndPort;
+	
+	private long eventCounter = 0L;
 
 	/**
 	 * The constructor
@@ -81,6 +83,8 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 	public Event intercept(Event event) {
 		String response = null;
 		try {
+			eventCounter++;
+			if (eventCounter % 100 == 0) logger.info("Processed {} events.", eventCounter);
 			String body = new String(event.getBody(), "UTF-8");
 //			logger.info("Input event body: {}", body);
 			if (body != null && body.trim().contains("END")) {

@@ -116,7 +116,8 @@ class Orchestrator(object):
             
             
     def start_recommendation_manager(self, orchestrator_ip, recommendation_endpoint):
-        self.executor.start_simple_recommendation_manager("rm0", orchestrator_ip, recommendation_endpoint)
+        for index in range(0,self.config.num_threads):
+            self.executor.start_simple_recommendation_manager("rm" + str(index), orchestrator_ip, recommendation_endpoint)
         
 
     def create_flume_config(self, template_file_name):

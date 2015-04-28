@@ -30,6 +30,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.flume.Context;
@@ -71,10 +72,18 @@ public class DirectIdomaarSource extends AbstractSource implements EventDrivenSo
 				String line;
 				while ((line = getNextLine()) != null && batch.size() < batchSize) batch.add(line);
 				List<Event> eventBatch = Lists.newArrayList();
-				for (String inputLine: batch) eventBatch.add(EventBuilder.withBody(inputLine, charset, header));
+				for (String inputLine: batch) {
+					Event event = EventBuilder.withBody(inputLine, charset, header);
+					eventBatch.add(event);
+					Map<String, String> headers = Maps.newHashMap();
+					String randomString = UUID.randomUUID().toString(); 
+					headers.put("key", randomString);
+					event.setHeaders(headers);
+				}
 				if (batch.size() < batchSize && !endSent) {
 					logger.info("Sending <END>");
-					eventBatch.add(EventBuilder.withBody("<END>", charset, header));
+					Event event = EventBuilder.withBody("<END>", charset, header);
+					eventBatch.add(event);
 					endSent = true;
 				}
 				getChannelProcessor().processEventBatch(eventBatch);
