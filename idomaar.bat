@@ -1,3 +1,4 @@
+@echo off
 vagrant -v
 set basedir=%~dp0
 cd %basedir%/datastreammanager

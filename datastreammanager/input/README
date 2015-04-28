@@ -1,0 +1,4 @@
+Place Idomaar input files in this directory.
+Files in this directory can be referred to using the relative path by the --data-source switch when starting Idomaar, e.g. for the sample file included here
+it would read  
+--data source newsreel-test/2014-07-01.data.idomaar_1k.txt 

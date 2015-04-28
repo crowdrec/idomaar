@@ -5,4 +5,4 @@ if [ -z "$RECO_ENGINE_ADDRESS" ]
     exit 1
 fi
 BASEDIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec $BASEDIR/../idomaar.sh --comp-env-address $RECO_ENGINE_ADDRESS --data-source /vagrant/data/newsreel-test/2014-07-01.data.idomaar_1k.txt --newsreel --new-topic
+exec $BASEDIR/../idomaar.sh --comp-env-address $RECO_ENGINE_ADDRESS --data-source newsreel-test/2014-07-01.data.idomaar_1k.txt.gz --newsreel --new-topic

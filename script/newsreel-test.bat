@@ -4,4 +4,4 @@ if "%~1"=="" (
   exit /B 1
 )
 set basedir=%~dp0
-%basedir%/../idomaar.bat --comp-env-address %1 --data-source /vagrant/data/newsreel-test/2014-07-01.data.idomaar_1k.txt --newsreel --new-topic
+%basedir%/../idomaar.bat --comp-env-address %1 --data-source newsreel-test/2014-07-01.data.idomaar_1k.txt --newsreel --new-topic

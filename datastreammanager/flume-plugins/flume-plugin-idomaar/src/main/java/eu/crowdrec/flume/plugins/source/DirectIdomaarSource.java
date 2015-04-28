@@ -21,11 +21,16 @@ package eu.crowdrec.flume.plugins.source;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.flume.Context;
 import org.apache.flume.Event;
@@ -43,9 +48,12 @@ import com.google.common.collect.Maps;
 public class DirectIdomaarSource extends AbstractSource implements EventDrivenSource, Configurable {
 
 	private static final Logger logger = LoggerFactory.getLogger(DirectIdomaarSource.class);
+	
+	private static final List<String> FORMATS = Lists.newArrayList("plain", "gzip");
 
 	private String fileName;
 	private Charset charset;
+	private String format;
 	private int batchSize = 100;
 
 	private BufferedReader reader;
@@ -87,7 +95,9 @@ public class DirectIdomaarSource extends AbstractSource implements EventDrivenSo
 	public void configure(Context context) {
 		fileName = context.getString("fileName", null);
 		charset = Charset.forName(context.getString("charset", "UTF-8"));
+		format = context.getString("format", null);
 		if (fileName == null) throw new RuntimeException("File name is not configured for " + getClass().getSimpleName());
+		if (format == null || !FORMATS.contains(format)) throw new RuntimeException("Format not specified or unknown " + format);
 	}
 	
 	@Override
@@ -95,7 +105,15 @@ public class DirectIdomaarSource extends AbstractSource implements EventDrivenSo
 		logger.info("Starting source with file name {}", fileName);
 		super.start();
 		try {
-			reader = Files.newBufferedReader(new File(fileName).toPath(), charset);
+			File inputFile = new File(fileName);
+			if (format.equals("plain")) {
+				reader = Files.newBufferedReader(inputFile.toPath(), charset);
+			} else if (format.equals("gzip")) {
+				InputStream fileStream = new FileInputStream(inputFile);
+				InputStream gzipStream = new GZIPInputStream(fileStream);
+				Reader decoder = new InputStreamReader(gzipStream, "UTF-8");
+				reader = new BufferedReader(decoder);
+			}
 		} catch (IOException exception) {
 			throw new RuntimeException();
 		}

@@ -1,17 +1,16 @@
 import  zmq
 import datetime
-import  os
 import logging
 import yaml
-import time
-from generated_flume_config import FlumeConfig
 from http_comp_env import HttpComputingEnvironmentProxy
 from recommendation_manager import RecommendationManager
 from util import timed_exec
 from zmq_comp_env import ZmqComputingEnvironmentProxy
+import os.path
 from idomaar_environment import IdomaarEnvironment
-from evaluator_proxy import EvaluatorProxy
 from replicating_evaluator_proxy import ReplicatingEvaluatorProxy
+import time
+from generated_flume_config import FlumeConfig
 
 logger = logging.getLogger("orchestrator")
 
@@ -80,6 +79,19 @@ class Orchestrator(object):
         logger.info("Start feeding training data, data reader for training data uri=[" + str(training_uri) + "]")
         flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-train.conf -Didomaar.url=' + training_uri + ' -Didomaar.sourceType=file'
         self.executor.run_on_data_stream_manager(flume_command)
+        
+    def check_exists(self, target_file):
+        if os.path.exists(target_file): 
+            logger.debug("File {0} exists".format(target_file))
+            return
+        logger.info("File {0} not found, trying to convert to Unix path.".format(target_file))
+        new_target_file = target_file.replace('\\', "/")
+        if os.path.exists(new_target_file): 
+            logger.info("File {0} exists".format(new_target_file))
+        else: 
+            raise Exception("File " + target_file + " not found. Please place your input files into the  datastreammanger/input folder and reference them " + \
+            " via the relative path.")
+        
 
     def feed_test_data(self):
         if self.config.input_data == 'recommend': 
@@ -98,7 +110,9 @@ class Orchestrator(object):
             test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.config.test_uri + " -Didomaar.sourceType=file"
             self.executor.run_on_data_stream_manager(test_data_feed_command)
         elif self.config.input_data == 'split':
-            self.evaluator_proxy.start_splitter(self.config.data_source)
+            input_file_location = '/vagrant/input/' + self.config.data_source
+            self.check_exists(input_file_location) 
+            self.evaluator_proxy.start_splitter(input_file_location)
             
             
     def start_recommendation_manager(self, orchestrator_ip, recommendation_endpoint):
@@ -134,6 +148,7 @@ class Orchestrator(object):
         environment.recommendation_requests_topic = self.config.recommendation_requests_topic
         environment.recommendation_results_topic = self.config.recommendation_results_topic
         environment.ground_truth_topic = self.config.ground_truth_topic
+        environment.data_source = self.config.data_source
         
         environment.validate()
         
