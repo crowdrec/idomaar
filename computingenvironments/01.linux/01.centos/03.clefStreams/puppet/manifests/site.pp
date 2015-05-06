@@ -34,35 +34,30 @@
       #password => "",
     },
     require => Class["jdk_oracle"],
-  } ->
+	}
+	##  } ->
 
     # copy everything
-    exec { "cp 20141112__CLEF-NewsREEL-Template.zip /mnt/algo/target/":
-    cwd        => '/mnt/algo',
-    creates => "/mnt/algo/20141112__CLEF-NewsREEL-Template.tgz",
-    path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
-    timeout => 600
-    } ->
+##	exec { "cp 20141112__CLEF-NewsREEL-Template.zip /mnt/algo/target/":
+##    cwd        => '/mnt/algo',
+##    creates => "/mnt/algo/20141112__CLEF-NewsREEL-Template.tgz",
+##    path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
+##   timeout => 600
+##    } ->
   
    # extract the content
-    exec { "tar xvzf /mnt/algo/20141112__CLEF-NewsREEL-Template.tgz --directory /mnt/algo/":
-    cwd        => '/mnt/algo/',
-    creates => "/mnt/algo/target",
-    path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
-    timeout => 900
-    } ->
+##    exec { "tar xvzf /mnt/algo/20141112__CLEF-NewsREEL-Template.tgz --directory /mnt/algo/":
+##    cwd        => '/mnt/algo/',
+##    creates => "/mnt/algo/target",
+##    path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
+##    timeout => 900
+##    } ->
    
 	# Execute algorithm
-	exec { "/mnt/algo/clef-newsreel-template.sh":
-	cwd        => '/mnt/algo',
-	path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
-	require => Class["jdk_oracle"],
-	} 
+##	exec { "/mnt/algo/clef-newsreel-template.sh":
+##	cwd        => '/mnt/algo',
+##	path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
+##	require => Class["jdk_oracle"],
+##	} 
 
-  # Execute algorithm
-  #exec { "sh /mnt/algo/itembasedrec.sh start":
-  #  cwd        => '/mnt/algo',
-  #  path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
-  #  require => Exec["mvn clean compile assembly:single"]
-  #} 
 
