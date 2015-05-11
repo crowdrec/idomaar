@@ -30,6 +30,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # TESTING FOR EVALUATION
   #config.vm.provision "shell", path: "vagrant/cloudera/07.ipython.sh"
   config.vm.provision "shell", path: "vagrant/cloudera/08.orchestrator-dependencies.sh"
+  config.vm.provision "shell", path: "vagrant/cloudera/09.newsreel-evaluator.sh"
 
   # INSTALLATION WITHOUT CLOUDERA PACKAGES
   #config.vm.provision "shell", path: "vagrant/standard/03.kafka.sh"
