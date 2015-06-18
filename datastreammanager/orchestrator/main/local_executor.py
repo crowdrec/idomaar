@@ -34,7 +34,8 @@ class LocalExecutor:
         result = self.process_runner(command=command_list, working_dir=self.datastream_manager_working_dir,
                                      subprocess_logger=datastream_logger, exit_on_failure=exit_on_failure, default_relog_level=default_relog_level)
         if capture_output: return result
-        else: return result[0]
+        elif len(result) > 0: return result[0]
+        else: return ""
         
     def start_on_data_stream_manager(self, command, process_name, exit_on_failure=True, sudo=True):
         """Start a command asynchronously on the data stream manager VM."""
@@ -115,6 +116,13 @@ class LocalExecutor:
             logger.info("Creating recommendation topic ...")
             self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.recommendation_requests_topic), exit_on_failure=True, capture_output=True)
         else:
+            #Try creating the topic, but don't propagate errors
+            topic_create_template = "/opt/apache/kafka/bin/kafka-topics.sh --zookeeper {zookeeper} --create --topic {topic} --partitions 10 --replication-factor 1"
+            logger.info("Creating data topic ...")
+            self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.data_topic), exit_on_failure=False, capture_output=True)
+            logger.info("Creating recommendation topic ...")
+            self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.recommendation_requests_topic), exit_on_failure=False, capture_output=True)
+            
             topic_info = "/opt/apache/kafka/bin/kafka-topics.sh --zookeeper {zookeeper} --topic recommendations --describe".format(zookeeper=zookeeper_hostport)
             result = self.run_on_data_stream_manager(topic_info, exit_on_failure=False, capture_output=True, default_relog_level='debug')
             num_partitions = len([str(line) for line in result if "Partition: " in str(line)])
