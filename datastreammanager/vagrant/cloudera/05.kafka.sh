@@ -1,19 +1,19 @@
 #!/bin/sh -Eux
 
 cd /tmp
-wget -nv -O kafka.tgz http://mirror.nohup.it/apache/kafka/0.8.1.1/kafka_2.10-0.8.1.1.tgz
+wget -nv -O kafka.tgz http://mirror.nohup.it/apache/kafka/0.8.2.1/kafka_2.10-0.8.2.1.tgz
 
 tar -xvf kafka.tgz
 mkdir -p /opt/apache
-mv kafka_2.10-0.8.1.1 /opt/apache
+mv kafka_2.10-0.8.2.1 /opt/apache
 cd /opt/apache
-ln -s /opt/apache/kafka_2.10-0.8.1.1 kafka
+ln -s /opt/apache/kafka_2.10-0.8.2.1 kafka
 mkdir /var/log/kafka
 
 useradd kafka
 chown kafka:kafka /var/log/kafka
 chown -R kafka:kafka /opt/apache/kafka
-chown -R kafka:kafka /opt/apache/kafka_2.10-0.8.1.1
+chown -R kafka:kafka /opt/apache/kafka_2.10-0.8.2.1
 
 IP=$(ifconfig  | grep 'inet addr:'| grep 168 | grep 192|cut -d: -f2 | awk '{ print $1}')
 #sed 's/broker.id=0/'broker.id=$1'/' /opt/apache/kafka/config/server.properties > /tmp/prop1.tmp
