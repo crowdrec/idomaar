@@ -40,7 +40,7 @@ class OrchestratorCli(cli.Application):
     
     
     config_file = 'default-config.json'
-    num_threads = 10
+    num_threads = 1
 
     #Configuration parameters from JSON config file
 

@@ -1,14 +1,20 @@
 package eu.crowdrec.flume.plugins.interceptor;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.zeromq.ZFrame;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 import org.zeromq.ZMQ.Socket;
@@ -29,7 +35,7 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 	private final org.zeromq.ZMQ.Context zmqContext;
 	private final String recommendationAgentName;
 
-	private static String fieldSeparator = "\\t";
+	private static String fieldSeparator = "\t";
 
 	public IdomaarRecommendationInterceptor(String recommendationEndpoint, String orchestratorHostport, String recommendationAgentName, int timeoutMillis) {
 		this.recommendationEndpoint = recommendationEndpoint;
@@ -77,7 +83,7 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 				if(parsedRequest.length < 5) {
 					logger.error("Received wrong data format for event ["+body+"]");
 				} else {
-					logger.info("Requesting recommendation for event ["+body+"]");
+					logger.trace("Requesting recommendation for event ["+body+"]");
 					requester.sendMore("RECOMMEND");
 					logger.info("Sending " + parsedRequest[3] + " to recommendation engine.");
 					requester.sendMore(parsedRequest[3]);
@@ -93,8 +99,9 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 						}
 					}
 					else {
-						logger.info("Received recommendation [" + reply + "]");
-						String response = body + fieldSeparator + reply.remove().toString();
+						String replyString = frameToString(reply);
+						logger.info("Received recommendation [" + replyString + "]");
+						String response = body + fieldSeparator + replyString;
 						// TODO PARSING RESPONSE AND ADD IT TO RESULT
 						event.setBody(response.getBytes(Charset.forName("UTF-8")));
 					}
@@ -107,6 +114,24 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 		// Let the enriched event go
 		logger.info("Sending event [" + new String(event.getBody()) + "]");
 		return event;
+	}
+
+	private String frameToString(ZMsg reply) {
+		try {
+			return new String(reply.remove().getData(), "UTF-8");
+		} catch (UnsupportedEncodingException exception) {
+			throw new RuntimeException(exception);
+		}
+	}
+	
+	private String zmsgToString(ZMsg message) throws UnsupportedEncodingException {
+		Iterator<ZFrame> frames = message.iterator();
+		List<String> frameStrings = Lists.newArrayList();
+		while (frames.hasNext()) {
+			ZFrame frame = frames.next();
+			frameStrings.add(new String(frame.getData(), "UTF-8"));
+		}
+		return Joiner.on(fieldSeparator).skipNulls().join(frameStrings);
 	}
 
 	private String[] parseRequest(String message) {
