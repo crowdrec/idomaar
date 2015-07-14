@@ -1,6 +1,5 @@
 package eu.crowdrec.recs.mahout;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
 
@@ -17,7 +16,6 @@ import org.zeromq.ZMQ.Socket;
 
 public class RecommendationEngine implements Runnable {
 
-	private static String zeromqBindAddress = "0.0.0.0";
 	private static String zeromqBindPort = "5560";
 
 	private final Recommender recommender;
@@ -28,30 +26,30 @@ public class RecommendationEngine implements Runnable {
 	public RecommendationEngine(Recommender recommender) {
 		this.recommender = recommender;
 		System.out.println("Starting engine recommender=["+ this.recommender +"]");
+		String zeromqBindAddress = "0.0.0.0";
 		recommendationSocketAddress = "tcp://" + zeromqBindAddress + ":" + zeromqBindPort;
 	}
 
 	private ZMsg createResponse(ZMsg request) {
 		String messageType = request.remove().toString();
-		if (messageType.equals("HELLO-RECOMMENDER-ENGINE")) {
-			return ZMsg.newStringMsg("HELLO THERE");
-		}
-		else if (messageType.equals("RECOMMEND")) {
-			try {
-				return cmdRecommend(request);
-			} catch (TasteException e) {
-				// TODO ADD MESSAGE TO RESPONSE
-				e.printStackTrace();
-				return ZMsg.newStringMsg(e.toString());
-			} catch (Exception e) {
-				shutdown = true;
-				e.printStackTrace();
-				return ZMsg.newStringMsg(e.toString());
-			}
-		}
-		else {
-			System.out.println("Unable to parse event " + messageType);
-			return ZMsg.newStringMsg("KO");
+		switch (messageType) {
+			case "HELLO-RECOMMENDER-ENGINE":
+				return ZMsg.newStringMsg("HELLO THERE");
+			case "RECOMMEND":
+				try {
+					return cmdRecommend(request);
+				} catch (TasteException e) {
+					// TODO ADD MESSAGE TO RESPONSE
+					e.printStackTrace();
+					return ZMsg.newStringMsg(e.toString());
+				} catch (Exception e) {
+					shutdown = true;
+					e.printStackTrace();
+					return ZMsg.newStringMsg(e.toString());
+				}
+			default:
+				System.out.println("Unable to parse event " + messageType);
+				return ZMsg.newStringMsg("KO");
 		}
 	}
 
@@ -63,9 +61,7 @@ public class RecommendationEngine implements Runnable {
 		recommendationSocket.bind(recommendationSocketAddress);
 		while (!shutdown && !Thread.currentThread().isInterrupted()) {
 			ZMsg recommendationRequest =  ZMsg.recvMsg(recommendationSocket);
-			System.out.println("Received recommendation request: ["+recommendationRequest+"].");
 			ZMsg response = createResponse(recommendationRequest);
-			System.out.println("Sending recommendation response " + response);
 			try {
 				response.send(recommendationSocket);
 			}
@@ -76,22 +72,15 @@ public class RecommendationEngine implements Runnable {
 		}
 	}
 
-	public void stop() {
-		this.shutdown=true;
-	}
 
 	/*
-	subject_etype    user
-	subject_eid    1001
-	request_timestamp    1404910899
-	request_properties    {"device":["smartphone", "android"], "location":"home"}
+	timestamp    1404910899
 	recomm_properties    { "explanation":"suggested by your close friends"}
 	linked_entities    [{"id":"movie:2001","rating":3.8,"rank":3}, {"id":"movie:2002","rating":4.3,"rank":1}, {"id":"movie:2003","rating":4,"rank":2,"explanation":{"reason":"you like","entity":"movie:2004"}}]
 */
 	protected ZMsg cmdRecommend(ZMsg msg) throws Exception {
 
 		String jsonString = msg.remove().toString();
-		System.err.println("Received recommendation request json " + jsonString);
 
 		JsonReader reader = Json.createReader(new StringReader(jsonString));
 		JsonObject properties = reader.readObject();
@@ -101,6 +90,9 @@ public class RecommendationEngine implements Runnable {
 
 		int reclen = properties.getInt("reclen");
 
+		System.err.println("Received recommendation request properties=[" + properties.toString() + "] linkedEntities=["+ linkedEntities.toString() +"]");
+
+
 		ZMsg recomms = new ZMsg();
 
 		String[] entityEls = linkedEntities.getString("subject").split(":");
@@ -108,11 +100,7 @@ public class RecommendationEngine implements Runnable {
 			String etype = entityEls[0];
 			long eid = Long.parseLong(entityEls[1]);
 			StringBuilder sb = new StringBuilder();
-			sb.append(etype).append("\t");
-			sb.append(Long.toString(eid)).append("\t");
-			sb.append(System.currentTimeMillis()).append("\t");
 			sb.append("{}").append("\t");
-			sb.append("{\"reclen\":").append(Integer.toString(reclen)).append("}").append("\t");
 			sb.append("[");
 			List<RecommendedItem> reclist = recommender.recommend(eid, reclen);
 			if ( reclist != null && reclist.size() > 0 ) {
@@ -130,10 +118,10 @@ public class RecommendationEngine implements Runnable {
 					sb.append("\"rank\":\"").append(Integer.toString(rank)).append("\"");
 					sb.append("}");
 				}
-			} else {
-				// do nothing
 			}
 			sb.append("]");
+
+			System.err.println("New recommendation result [" + sb +"]");
 			recomms.addString(sb.toString());
 		} else {
 			throw new Exception("Entity elements length <> 2, current length="+ entityEls.length);

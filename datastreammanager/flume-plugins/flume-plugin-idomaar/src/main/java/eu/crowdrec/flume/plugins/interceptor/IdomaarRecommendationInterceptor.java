@@ -89,7 +89,15 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 					requester.sendMore(parsedRequest[3]);
 					requester.send(parsedRequest[4]);
 
+					long startTime = System.currentTimeMillis();
+					// Calculate request duration	
+
+
 					ZMsg reply =  ZMsg.recvMsg(requester);
+
+					long endTime = System.currentTimeMillis();
+					long duration = endTime - startTime;
+
 					if (reply == null) {
 						if (requester.base().errno() == ZError.EAGAIN) {
 							logger.error("Error while waiting for recommendation results for request {}, possible timeout.", Arrays.toString(parsedRequest));
@@ -101,10 +109,8 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 					else {
 						String replyString = frameToString(reply);
 						logger.info("Received recommendation [" + replyString + "]");
-						String response = body + fieldSeparator + replyString;
-						// TODO PARSING RESPONSE AND ADD IT TO RESULT
-						event.setBody(response.getBytes(Charset.forName("UTF-8")));
-					}
+						String response = body + fieldSeparator + duration + fieldSeparator + replyString;
+						event.setBody(response.getBytes(Charset.forName("UTF-8")));					}
 				}
 			}
 		} catch(Exception ex) {
@@ -123,7 +129,7 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 			throw new RuntimeException(exception);
 		}
 	}
-	
+
 	private String zmsgToString(ZMsg message) throws UnsupportedEncodingException {
 		Iterator<ZFrame> frames = message.iterator();
 		List<String> frameStrings = Lists.newArrayList();
