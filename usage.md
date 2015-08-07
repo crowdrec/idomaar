@@ -16,4 +16,5 @@ Run `idomaar-demo.sh` to launch a demo computing environment, launch the orchest
 ##Accelerated startup
 If you launch the orchestrator several times, it's much faster to `vagrant ssh` into the datastreammanager VM and run orchestrator_cli.py directly.
 
-
+##Note for Windows users
+When checking out the Idomaar git repository, please make sure that your line-endings are in Unix format. The recommended way of doing this is to set Git's autocrlf to input (by running `git config --global core.autocrlf input`).
