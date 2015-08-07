@@ -68,7 +68,7 @@ class Orchestrator(object):
             suffix = "{mo}{d}-{h}{mi}{sec}".format(y=now.year,mo=now.month,d=now.day,h=now.hour,mi=now.minute,sec=now.second)
             self.config.data_topic = "data-" + suffix
             self.config.recommendation_requests_topic = "recommendation-requests-" + suffix
-            self.config.recommendation_results_topic = "recommendation-results-" + suffix
+            self.config.recommendation_results_topic = "recommendation-results-" + suffix 
             self.config.input_topic = "input-" + suffix
             self.config.ground_truth_topic = "ground-truth-" + suffix
         logger.info("Using Kafka topic names: {0} for data, {1} for recommendations requests".format(self.config.data_topic, self.config.recommendation_requests_topic))
@@ -77,7 +77,7 @@ class Orchestrator(object):
         training_uri = self.config.training_uri
         self.create_flume_config('idomaar-TO-kafka-train.conf')
         logger.info("Start feeding training data, data reader for training data uri=[" + str(training_uri) + "]")
-        flume_command = 'flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-train.conf -Didomaar.url=' + training_uri + ' -Didomaar.sourceType=file'
+        flume_command = '/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/training --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-train.conf -Didomaar.url=' + training_uri + ' -Didomaar.sourceType=file'
         self.executor.run_on_data_stream_manager(flume_command)
         
     def check_exists(self, target_file):
@@ -101,13 +101,13 @@ class Orchestrator(object):
             config.set_value('agent.sources.idomaar_source.fileName', self.config.data_source)
             config.generate()
             logger.info("Start feeding data to Flume, Kafka sink topic is {0}".format(self.config.recommendation_requests_topic))
-            test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name agent --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf"
+            test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/test --name agent --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf"
             self.executor.start_on_data_stream_manager(command=test_data_feed_command, process_name="to-kafka-flume")
         elif self.config.input_data == 'test':
             self.create_flume_config('idomaar-TO-kafka-test.conf')
             logger.info("Start feeding test data to queue")
             ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
-            test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.config.test_uri + " -Didomaar.sourceType=file"
+            test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.config.test_uri + " -Didomaar.sourceType=file"
             self.executor.run_on_data_stream_manager(test_data_feed_command)
         elif self.config.input_data == 'split':
             input_file_location = '/vagrant/input/' + self.config.data_source

@@ -16,7 +16,7 @@ class SocketStreamEvaluatorProxy():
         config.set_value('agent.sources.idomaar_source.fileName', self.config.data_source)
         config.generate()
         logger.info("Start feeding data to Flume, Kafka sink topic is {0}".format(self.config.input_topic))
-        test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name agent --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf"
+        test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/test --name agent --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf"
         self.executor.start_on_data_stream_manager(command=test_data_feed_command, process_name="to-kafka-flume")
     
     def start_splitter(self):

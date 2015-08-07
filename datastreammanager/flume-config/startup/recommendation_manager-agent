@@ -27,7 +27,7 @@ FLUME_LOCK_DIR="/var/lock/subsys/"
 LOCKFILE="${FLUME_LOCK_DIR}/recommendation-manager"
 desc="Recommendation manager agent daemon"
 
-EXEC_PATH=/usr/bin/flume-ng
+EXEC_PATH=/opt/apache/flume/bin/flume-ng
 FLUME_PID_FILE=${FLUME_RUN_DIR}/recommendation-manager-$RECOMMENDATION_MANAGER_AGENT_NAME.pid
 
 # These directories may be tmpfs and may or may not exist

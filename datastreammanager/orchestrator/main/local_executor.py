@@ -83,7 +83,7 @@ class LocalExecutor:
     def start_simple_recommendation_manager(self, name, orchestrator_ip, recommendation_endpoint):
         logger.info("Starting recommendation manager " + name)
         orchestrator_connection = "tcp://{ip_address}:{port}".format(ip_address=orchestrator_ip, port=self.orchestrator_port)
-        start_manager_command = ("flume-ng agent --conf /vagrant/flume-config/log4j/recommendation-manager --name a1 --conf-file /vagrant/flume-config/config/generated/kafka_recommendations_generated.conf " 
+        start_manager_command = ("/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/recommendation-manager --name a1 --conf-file /vagrant/flume-config/config/generated/kafka_recommendations_generated.conf " 
         + "-Didomaar.recommendation.hostname={recommendation_endpoint} -Didomaar.orchestrator.hostname={orchestrator_connection} " +
         " -Didomaar.recommendation.manager.name=rm0 -Didomaar.recommendation.timeout.millis=2000").format(recommendation_endpoint=recommendation_endpoint, orchestrator_connection=orchestrator_connection)
         self.start_on_data_stream_manager(command=start_manager_command, process_name="reco-manager")
@@ -115,6 +115,8 @@ class LocalExecutor:
             self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.data_topic), exit_on_failure=True, capture_output=True)
             logger.info("Creating recommendation topic ...")
             self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.recommendation_requests_topic), exit_on_failure=True, capture_output=True)
+            logger.info("Creating recommendation results topic ...")
+            self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.recommendation_results_topic), exit_on_failure=True, capture_output=True)
         else:
             #Try creating the topic, but don't propagate errors
             topic_create_template = "/opt/apache/kafka/bin/kafka-topics.sh --zookeeper {zookeeper} --create --topic {topic} --partitions 10 --replication-factor 1"
@@ -122,6 +124,8 @@ class LocalExecutor:
             self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.data_topic), exit_on_failure=False, capture_output=True)
             logger.info("Creating recommendation topic ...")
             self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.recommendation_requests_topic), exit_on_failure=False, capture_output=True)
+            logger.info("Creating recommendation results topic ...")
+            self.run_on_data_stream_manager(topic_create_template.format(zookeeper=zookeeper_hostport, topic=config.recommendation_results_topic), exit_on_failure=False, capture_output=True)
             
             topic_info = "/opt/apache/kafka/bin/kafka-topics.sh --zookeeper {zookeeper} --topic recommendations --describe".format(zookeeper=zookeeper_hostport)
             result = self.run_on_data_stream_manager(topic_info, exit_on_failure=False, capture_output=True, default_relog_level='debug')

@@ -23,7 +23,7 @@ class ReplicatingEvaluatorProxy():
         
         config.generate(output_file_name=config_file_name)
         #logger.info("Start feeding data to Flume, Kafka sink topic is {0}".format(topic_name))
-        test_data_feed_command = "flume-ng agent --conf /vagrant/flume-config/log4j/test --name agent --conf-file /vagrant/flume-config/config/generated/" + config_file_name
+        test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/test --name agent --conf-file /vagrant/flume-config/config/generated/" + config_file_name
         self.executor.start_on_data_stream_manager(command=test_data_feed_command, process_name="to-topic-" + conf_file_suffix)
         
     def guess_file_format(self, file_name):
