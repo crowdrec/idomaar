@@ -21,6 +21,9 @@ cp target/lib/jeromq-* /opt/apache/flume/lib
 
 useradd flume
 
+### COPY ENVIRONMENT CONFIGURATION FOR CLOUDERA
+sudo ln /usr/lib/zookeeper/zookeeper-3.4.5-cdh5.4.5.jar /opt/apache/flume/lib -s
+
 
 # INSTALL PATCHED KAFKA PLUGIN, RESOLVE ERROR IN PARTITION KEY
 #cd /vagrant/flume-plugins/flume-kafka-source
