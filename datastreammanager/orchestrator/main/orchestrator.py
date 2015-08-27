@@ -21,6 +21,7 @@ class Orchestrator(object):
     def __init__(self, executor, datastreammanager, config):
         self.config = config
         self.recommendation_target = config.recommendation_target
+        self.evaluation_result_target = '/tmp/evaluation_result'
         self.executor = executor
         self.datastreammanager = datastreammanager
 
@@ -156,13 +157,15 @@ class Orchestrator(object):
         logger.info("Idomaar environment is " + environment.printed_form())
         return environment
     
-    def start_evaluator(self, environment):
-        evaluator_command = 'java -jar /vagrant/newsreel-evaluator/target/newsreel-evaluator-0.0.1-SNAPSHOT-jar-with-dependencies.jar'
-        command = evaluator_command + " 192.168.22.5:2181 192.168.22.5:9092 {results_topic} {ground_topic} {output_topic}".format(results_topic=environment.recommendation_results_topic,
-                                                                                                                                 ground_topic=environment.ground_truth_topic,
-                                                                                                                                 output_topic='output')
+    def start_evaluator(self):
+        if self.config.newsreel == True:
+            evaluator_command = 'java -jar /vagrant/newsreel-evaluator/target/newsreel-evaluator-0.0.1-SNAPSHOT-jar-with-dependencies.jar'
+            command = evaluator_command + " 192.168.22.5:2181 192.168.22.5:9092 {results_topic} {ground_topic} {output_topic}".format(results_topic=environment.recommendation_results_topic, ground_topic=environment.ground_truth_topic, output_topic='output')
+        else:
+            command = "/usr/bin/spark-shell -i /vagrant/evaluator/simple_test.script {recommendation_target} {evaluation_result}".format(recommendation_target=self.recommendation_target, evaluation_result=self.evaluation_result_target)
+
         #self, command, exit_on_failure=True, capture_output=False, default_relog_level='info'
-        self.executor.run_on_data_stream_manager(command=command, exit_on_failure=True)
+        self.executor.run_on_data_stream_manager(command=command, exit_on_failure=False)
 
 
     def do_run(self):
@@ -200,7 +203,7 @@ class Orchestrator(object):
         ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
         ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
         
-        self.start_evaluator(environment)
+        self.start_evaluator()
 
         if not self.config.no_control_messages: 
             self.comp_env_proxy.send_test()

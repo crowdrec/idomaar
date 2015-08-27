@@ -1,2 +1,2 @@
 ## INSTALL BASE SPARK ENV
-apt-get -y install spark-python
+apt-get -y install spark-python hive

@@ -37,6 +37,7 @@ class OrchestratorCli(cli.Application):
     ground_truth_topic = 'ground-truth'
     
     input_data = 'split'
+    newsreel = False
     
     
     config_file = 'default-config.json'

@@ -7,6 +7,14 @@ apt-get update
 apt-get -y install zookeeper-server
 apt-get -y install python-pip
 
+# CONFIGURE TOPIC CLEANING FOR KAFKA AND ZOOKEEPER
+cp /vagrant/vagrant/cloudera/init.d/clean-topics /etc/init.d/
+sudo chmod +x /etc/init.d/clean-topics
+
+service zookeeper-server stop	
+service clean-topics start
+update-rc.d clean-topics defaults 10
+
 # INIT ZOOKEEPER
 /etc/init.d/zookeeper-server init
 
