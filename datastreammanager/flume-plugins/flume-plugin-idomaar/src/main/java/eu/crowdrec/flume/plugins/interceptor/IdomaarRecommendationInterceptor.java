@@ -119,6 +119,8 @@ public class IdomaarRecommendationInterceptor implements Interceptor {
 
 		// Let the enriched event go
 		logger.info("Sending event [" + new String(event.getBody()) + "]");
+		headers.remove("topic");
+		event.setHeaders(headers);
 		return event;
 	}
 

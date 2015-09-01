@@ -69,7 +69,7 @@ class Orchestrator(object):
             suffix = "{mo}{d}-{h}{mi}{sec}".format(y=now.year,mo=now.month,d=now.day,h=now.hour,mi=now.minute,sec=now.second)
             self.config.data_topic = "data-" + suffix
             self.config.recommendation_requests_topic = "recommendation-requests-" + suffix
-            self.config.recommendation_results_topic = "recommendation-results-" + suffix 
+            self.config.recommendation_results_topic = "recommendation-results-" + suffix
             self.config.input_topic = "input-" + suffix
             self.config.ground_truth_topic = "ground-truth-" + suffix
         logger.info("Using Kafka topic names: {0} for data, {1} for recommendations requests".format(self.config.data_topic, self.config.recommendation_requests_topic))
