@@ -61,11 +61,11 @@ class RecommendationManager:
         elif target_type == "hdfs":
             self.set_value(config, "a1.sinks.hdfs.hdfs.path", location)
 
-#        if communication_protocol == 'tcp':
-#            self.set_value(config, 'a1.sources.r1.interceptors.i1.type', 'eu.crowdrec.flume.plugins.interceptor.IdomaarRecommendationInterceptor$Builder')
-#        elif communication_protocol == 'http':
-#            self.set_value(config, 'a1.sources.r1.interceptors.i1.type', 'eu.crowdrec.flume.plugins.interceptor.IdomaarHTTPRecommendationInterceptor$Builder')
-#        else: raise "Recommendation manager communication protocol must be either tcp or http."
+        if communication_protocol == 'tcp':
+            self.set_value(config, 'a1.sources.r1.interceptors.i1.type', 'eu.crowdrec.flume.plugins.interceptor.IdomaarRecommendationInterceptor$Builder')
+        elif communication_protocol == 'http':
+            self.set_value(config, 'a1.sources.r1.interceptors.i1.type', 'eu.crowdrec.flume.plugins.interceptor.IdomaarHTTPRecommendationInterceptor$Builder')
+        else: raise "Recommendation manager communication protocol must be either tcp or http."
 
         self.set_value(config, 'a1.sources.r1.topic', recommendations_topic)
         self.set_value(config, 'a1.sinks.kafka_sink.topic', recommendation_results_topic)
