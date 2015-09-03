@@ -16,7 +16,9 @@ cd /vagrant/flume-plugins/flume-plugin-idomaar
 # INSTALL IDOMAAR PLUGIN IN FLUME LIB DIRECTORY 
 cp target/flume-plugin-idomaar-*.jar /opt/apache/flume/lib
 #Quick hack to get dependencies to the flume classpath. Should be a plugin.d dir
-cp target/lib/*jar /opt/apache/flume/lib
+
+# TODO VERIFY WHAT LIB HAS TO BE COPIED
+#cp target/lib/*jar /opt/apache/flume/lib
 cp target/lib/jeromq-* /opt/apache/flume/lib
 
 useradd flume
