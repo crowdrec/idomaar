@@ -12,4 +12,6 @@ cd /vagrant/evaluator/spark-streaming
 sudo sbt publish-local
 
 # TODO AFTER COMPILATION UPDATE AND SCALA HOME HAS TO BE REMOVED FROM BUILD SBT
-# 
+
+sudo sed -e "s/skip/\/\/skip/" -i build.sbt
+sudo sed -e "s/scalaHome/\/\/scalaHome/" -i build.sbt
