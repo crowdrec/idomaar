@@ -1,4 +1,3 @@
-package eu.crowdrec.evaluator.kafka
 
 import kafka.serializer.DefaultDecoder
 import org.apache.spark.SparkConf
@@ -76,8 +75,9 @@ object KafkaSingleTopic {
   def main(args: Array[String]) {
 
    Logger.getLogger("akka").setLevel(Level.OFF)
-
-    if ( args.length == 3 ) {
+   Logger.getLogger("org").setLevel(Level.OFF)
+   
+   if ( args.length == 3 ) {
       KafkaSingleTopic.streaming(args(0),args(1),args(2))
     } else {
       println("KafkaSingleTopic <spark_master> <topic_name> <zookeeper host:port>")
