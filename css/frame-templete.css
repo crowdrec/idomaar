@@ -276,9 +276,10 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 .bf-github h3 ~ p {
   font-size: 14px;
 }
-.bf-github a,
-.bf-github a:hover {
+.bf-github a {
   color: #fff;
+}
+.bf-github a:hover {
   text-decoration: underline;
 }
 
