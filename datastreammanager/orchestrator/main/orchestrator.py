@@ -157,7 +157,7 @@ class Orchestrator(object):
         logger.info("Idomaar environment is " + environment.printed_form())
         return environment
     
-    def start_evaluator(self):
+    def start_evaluator(self, environment):
         if self.config.newsreel == True:
             evaluator_command = 'java -jar /vagrant/newsreel-evaluator/target/newsreel-evaluator-0.0.1-SNAPSHOT-jar-with-dependencies.jar'
             command = evaluator_command + " 192.168.22.5:2181 192.168.22.5:9092 {results_topic} {ground_topic} {output_topic}".format(results_topic=environment.recommendation_results_topic, ground_topic=environment.ground_truth_topic, output_topic='output')
@@ -203,7 +203,7 @@ class Orchestrator(object):
         ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
         ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS
         
-        self.start_evaluator()
+        self.start_evaluator(environment)
 
         if not self.config.no_control_messages: 
             self.comp_env_proxy.send_test()
