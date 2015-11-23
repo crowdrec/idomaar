@@ -20,10 +20,6 @@ mkdir -p /opt/apache/flume/plugins.d/idomaar/libext
 cp target/flume-plugin-idomaar-*.jar /opt/apache/flume/plugins.d/idomaar/lib
 cp target/lib/*jar /opt/apache/flume/plugins.d/idomaar/libext
 
-# TODO VERIFY WHAT LIB HAS TO BE COPIED
-#cp target/lib/*jar /opt/apache/flume/lib
-#cp target/lib/jeromq-* /opt/apache/flume/lib
-
 useradd flume
 
 ### COPY ENVIRONMENT CONFIGURATION FOR CLOUDERA
