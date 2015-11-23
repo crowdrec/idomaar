@@ -130,7 +130,7 @@ class OrchestratorCli(cli.Application):
         self.skip_training_cycle = True
         self.input_data = "split"
         self.no_control_messages = True
-        if not self.computing_environment_url.scheme in ['http', 'https']: raise "For Newsreel, the computing environment URL must have scheme http or https."
+        if not self.computing_environment_url.scheme in ['http', 'https']: raise Exception("For Newsreel, the computing environment URL must have scheme http or https.")
         
     @cli.switch("--num-threads", int)
     def get_num_threads(self, num_threads):

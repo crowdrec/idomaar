@@ -13,13 +13,16 @@ mkdir -p /var/log/flume-ng
 cd /vagrant/flume-plugins/flume-plugin-idomaar
 /opt/apache/apache-maven-3.2.3/bin/mvn clean install
 
-# INSTALL IDOMAAR PLUGIN IN FLUME LIB DIRECTORY 
-cp target/flume-plugin-idomaar-*.jar /opt/apache/flume/lib
-#Quick hack to get dependencies to the flume classpath. Should be a plugin.d dir
+# INSTALL IDOMAAR PLUGIN IN FLUME DIRECTORY
+mkdir -p /opt/apache/flume/plugins.d/idomaar/lib
+mkdir -p /opt/apache/flume/plugins.d/idomaar/libext
+
+cp target/flume-plugin-idomaar-*.jar /opt/apache/flume/plugins.d/idomaar/lib
+cp target/lib/*jar /opt/apache/flume/plugins.d/idomaar/libext
 
 # TODO VERIFY WHAT LIB HAS TO BE COPIED
 #cp target/lib/*jar /opt/apache/flume/lib
-cp target/lib/jeromq-* /opt/apache/flume/lib
+#cp target/lib/jeromq-* /opt/apache/flume/lib
 
 useradd flume
 
