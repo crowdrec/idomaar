@@ -30,7 +30,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
 
   # SPARK EVALUATOR
-  #config.vm.provision "shell", path: "vagrant/10.spark.sh"
+  config.vm.provision "shell", path: "vagrant/10.spark.sh"
 
 
 
