@@ -21,26 +21,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.provision "shell", path: "vagrant/01.java.sh"
   config.vm.provision "shell", path: "vagrant/02.maven.sh"
+  config.vm.provision "shell", path: "vagrant/03.zookeeper.sh"
+  config.vm.provision "shell", path: "vagrant/04.flume-plugins.sh"
+  config.vm.provision "shell", path: "vagrant/05.kafka.sh"
+  config.vm.provision "shell", path: "vagrant/06.create-kafka-topic.sh"
+  config.vm.provision "shell", path: "vagrant/08.orchestrator-dependencies.sh"
+  config.vm.provision "shell", path: "vagrant/09.newsreel-evaluator.sh"
 
-  # INSTALLATION WITH CLOUDERA PACKAGES
-  config.vm.provision "shell", path: "vagrant/cloudera/03.cloudera.sh"
-  config.vm.provision "shell", path: "vagrant/cloudera/04.flume-plugins.sh"
-  config.vm.provision "shell", path: "vagrant/cloudera/05.kafka.sh"
-  config.vm.provision "shell", path: "vagrant/cloudera/06.create-kafka-topic.sh"
-  # TESTING FOR EVALUATION
-  #config.vm.provision "shell", path: "vagrant/cloudera/07.ipython.sh"
-  config.vm.provision "shell", path: "vagrant/cloudera/08.orchestrator-dependencies.sh"
-  config.vm.provision "shell", path: "vagrant/cloudera/09.newsreel-evaluator.sh"
-
-  # INSTALLATION WITHOUT CLOUDERA PACKAGES
-  #config.vm.provision "shell", path: "vagrant/standard/03.kafka.sh"
-  #config.vm.provision "shell", path: "vagrant/standard/04.flume.sh"
-  #config.vm.provision "shell", path: "vagrant/standard/05.kafka-flume-plugin.sh"
-  #config.vm.provision "shell", path: "vagrant/standard/06.idomaar-flume-plugin.sh"
-  #config.vm.provision "shell", path: "vagrant/standard/07.create-kafka-topic.sh"
 
   # SPARK EVALUATOR
-  config.vm.provision "shell", path: "vagrant/cloudera/10.spark.sh"
+  #config.vm.provision "shell", path: "vagrant/10.spark.sh"
 
 
 
