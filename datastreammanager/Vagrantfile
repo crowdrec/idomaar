@@ -1,9 +1,27 @@
 require 'yaml'
 settings = YAML.load_file 'vagrant.yml'
 
+##################
+### VIRTUALBOX ###
+##################
+
 BOX_NAME   		= 'ubuntu/trusty64'
 BOX_URL       = 'https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box'
 box_ip_address = settings['box']['ip_address']
+
+
+##################
+### AMAZON AWS ###
+##################
+AWS_REGION = 'us-west-2'
+AWS_KEYPAIR_NAME ='test'
+AWS_PRIVATEKEY_PATH ='./test.pem'
+AWS_INSTANCE_TYPE ='t2.small'
+AWS_AMI = 'ami-5189a661' #Ubuntu Server 14.04 LTS (HVM), SSD Volume Type
+
+AWS_ACCESS_KEY_ID = 'test'
+AWS_SECRET_ACCESS_KEY = 'test'
+
 
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
@@ -13,34 +31,43 @@ VAGRANTFILE_API_VERSION = '2'
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = BOX_NAME
   config.vm.box_url = BOX_URL
-	 
+
   config.vm.network :private_network, ip: box_ip_address
+
   config.vm.provider :virtualbox do |vb|
-      vb.customize ["modifyvm", :id, "--memory", "2048"]
+    vb.customize ["modifyvm", :id, "--memory", "2048"]
+  end
+
+  config.vm.provider :aws do |aws, override|
+    override.vm.box = 'dummy'
+
+    aws.access_key_id = AWS_ACCESS_KEY_ID
+    aws.secret_access_key = AWS_SECRET_ACCESS_KEY
+
+    aws.keypair_name = AWS_KEYPAIR_NAME
+    aws.ami = AWS_AMI
+    aws.instance_type = AWS_INSTANCE_TYPE
+    aws.region = AWS_REGION
+    aws.tags = {
+        'Name' => "Idommar DataStreamManager"
+    }
+
+    override.ssh.username = "ubuntu"
+    override.ssh.private_key_path = AWS_PRIVATEKEY_PATH
   end
 
   config.vm.provision "shell", path: "vagrant/01.java.sh"
   config.vm.provision "shell", path: "vagrant/02.maven.sh"
+  config.vm.provision "shell", path: "vagrant/03.zookeeper.sh"
+  config.vm.provision "shell", path: "vagrant/04.flume-plugins.sh"
+  config.vm.provision "shell", path: "vagrant/05.kafka.sh"
+  config.vm.provision "shell", path: "vagrant/06.create-kafka-topic.sh"
+  config.vm.provision "shell", path: "vagrant/08.orchestrator-dependencies.sh"
+  config.vm.provision "shell", path: "vagrant/09.newsreel-evaluator.sh"
 
-  # INSTALLATION WITH CLOUDERA PACKAGES
-  config.vm.provision "shell", path: "vagrant/cloudera/03.cloudera.sh"
-  config.vm.provision "shell", path: "vagrant/cloudera/04.flume-plugins.sh"
-  config.vm.provision "shell", path: "vagrant/cloudera/05.kafka.sh"
-  config.vm.provision "shell", path: "vagrant/cloudera/06.create-kafka-topic.sh"
-  # TESTING FOR EVALUATION
-  #config.vm.provision "shell", path: "vagrant/cloudera/07.ipython.sh"
-  config.vm.provision "shell", path: "vagrant/cloudera/08.orchestrator-dependencies.sh"
-  config.vm.provision "shell", path: "vagrant/cloudera/09.newsreel-evaluator.sh"
-
-  # INSTALLATION WITHOUT CLOUDERA PACKAGES
-  #config.vm.provision "shell", path: "vagrant/standard/03.kafka.sh"
-  #config.vm.provision "shell", path: "vagrant/standard/04.flume.sh"
-  #config.vm.provision "shell", path: "vagrant/standard/05.kafka-flume-plugin.sh"
-  #config.vm.provision "shell", path: "vagrant/standard/06.idomaar-flume-plugin.sh"
-  #config.vm.provision "shell", path: "vagrant/standard/07.create-kafka-topic.sh"
 
   # SPARK EVALUATOR
-  config.vm.provision "shell", path: "vagrant/cloudera/10.spark.sh"
+  config.vm.provision "shell", path: "vagrant/10.spark.sh"
 
 
 
