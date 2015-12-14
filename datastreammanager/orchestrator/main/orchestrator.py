@@ -11,6 +11,7 @@ from idomaar_environment import IdomaarEnvironment
 from replicating_evaluator_proxy import ReplicatingEvaluatorProxy
 import time
 from generated_flume_config import FlumeConfig
+import socket
 
 logger = logging.getLogger("orchestrator")
 
@@ -137,14 +138,15 @@ class Orchestrator(object):
     def gather_environment(self):
         environment = IdomaarEnvironment()
         datastream_config = self.read_yaml_config(os.path.join(self.datastreammanager, "vagrant.yml"))
-        datastream_ip_address = datastream_config['box']['ip_address']
+        datastream_ip_address = socket.gethostbyname(socket.gethostname())
+        #datastream_ip_address = datastream_config['box']['ip_address']
         #TODO: properly handle orchestrator location
         environment.orchestrator_ip = datastream_ip_address
         zookeeper_port = datastream_config['zookeeper']['port']
         environment.zookeeper_hostport = "{host}:{port}".format(host=datastream_ip_address, port=zookeeper_port)
         environment.kafka_hostport = "{host}:9092".format(host=datastream_ip_address)
         environment.comp_env_address = self.config.computing_environment_address
-        environment.evaluator_ip = '192.168.22.201'
+        environment.evaluator_ip = datastream_ip_address
         
         environment.input_topic = self.config.input_topic
         environment.recommendation_requests_topic = self.config.recommendation_requests_topic
@@ -160,7 +162,7 @@ class Orchestrator(object):
     def start_evaluator(self, environment):
         if self.config.newsreel:
             evaluator_command = 'java -jar /vagrant/newsreel-evaluator/target/newsreel-evaluator-0.0.1-SNAPSHOT-jar-with-dependencies.jar'
-            command = evaluator_command + " 192.168.22.5:2181 192.168.22.5:9092 {results_topic} {ground_topic} {output_topic}".format(results_topic=environment.recommendation_results_topic, ground_topic=environment.ground_truth_topic, output_topic='output')
+            command = evaluator_command + " {orhcestrator_ip}:2181 {orhcestrator_ip}:9092 {results_topic} {ground_topic} {output_topic}".format(orchestrator_ip=environment.orchestrator_ip, results_topic=environment.recommendation_results_topic, ground_topic=environment.ground_truth_topic, output_topic='output')
         else:
             command = "/opt/apache/spark/bin/spark-submit /vagrant/evaluator/eval.py {recommendation_target}/* {evaluation_result} /vagrant/evaluator/configuration.json".format(recommendation_target=self.recommendation_target.replace("fs:", ""), evaluation_result=self.evaluation_result_target)
 

@@ -14,14 +14,13 @@ box_ip_address = settings['box']['ip_address']
 ### AMAZON AWS ###
 ##################
 AWS_REGION = 'us-west-2'
-AWS_KEYPAIR_NAME ='test'
-AWS_PRIVATEKEY_PATH ='./test.pem'
+AWS_KEYPAIR_NAME ='idomaar'
 AWS_INSTANCE_TYPE ='t2.small'
 AWS_AMI = 'ami-5189a661' #Ubuntu Server 14.04 LTS (HVM), SSD Volume Type
 
-AWS_ACCESS_KEY_ID = 'test'
-AWS_SECRET_ACCESS_KEY = 'test'
-
+AWS_ACCESS_KEY_ID = ENV['AWS_ACCESS_KEY_ID']
+AWS_SECRET_ACCESS_KEY = ENV['AWS_SECRET_ACCESS_KEY']
+AWS_PRIVATEKEY_PATH = ENV['AWS_PRIVATEKEY_PATH']
 
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
