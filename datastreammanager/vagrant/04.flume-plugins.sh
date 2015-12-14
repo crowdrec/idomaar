@@ -22,8 +22,8 @@ cp target/lib/*jar /opt/apache/flume/plugins.d/idomaar/libext
 
 useradd flume
 
-### COPY ENVIRONMENT CONFIGURATION FOR CLOUDERA
-sudo ln /usr/lib/zookeeper/zookeeper-3.4.5-cdh5.4.5.jar /opt/apache/flume/lib -s
+### COPY ENVIRONMENT CONFIGURATION 
+sudo ln /opt/apache/zookeeper/zookeeper-3.4.6.jar /opt/apache/flume/lib -s
 
 
 # INSTALL PATCHED KAFKA PLUGIN, RESOLVE ERROR IN PARTITION KEY

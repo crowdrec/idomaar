@@ -22,7 +22,7 @@ sed 's/#advertised.host.name=<hostname routable by clients>/'advertised.host.nam
 sed 's/num\.partitions=2/num\.partitions=1/' /tmp/prop2.tmp > /tmp/prop3.tmp
 sed 's/#host.name=localhost/'host.name=$IP'/' /tmp/prop3.tmp  > /opt/apache/kafka/config/server-vagrant.properties
 
-cp /vagrant/vagrant/cloudera/init.d/kafka /etc/init.d/
+cp /vagrant/vagrant/init.d/kafka /etc/init.d/
 chmod +x /etc/init.d/kafka
 
 service kafka start

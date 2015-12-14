@@ -28,7 +28,7 @@ class EvaluatorProxy():
                           'RECOMMENDATION_REQUESTS_TOPIC': self.idomaar_environment.recommendation_requests_topic,
                           'GROUND_TRUTH_TOPIC': self.idomaar_environment.ground_truth_topic,
                           'SPARK_CLASSPATH': '`cat /usr/share/ivy/path.txt`'}
-        spark_shell_command = '/usr/bin/spark-shell -i splitterdemo.script'
+        spark_shell_command = '/opt/apache/spark/bin/spark-shell -i splitterdemo.script'
         
         compound_command = "ssh vagrant@{evaluator_host} cd {evaluator_script_folder}; {env_variables} {spark_shell_command}".format(
                             evaluator_host=self.idomaar_environment.evaluator_ip,
