@@ -101,6 +101,8 @@ class Orchestrator(object):
             config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name='idomaar-TO-kafka-direct.conf')
             config.set_value('agent.sinks.kafka_sink.topic', self.config.recommendation_requests_topic)
             config.set_value('agent.sources.idomaar_source.fileName', self.config.data_source)
+            config.set_value('agent.sinks.kafka_sink.brokerList', self.environment.kafka_hostport)
+
             config.generate()
             logger.info("Start feeding data to Flume, Kafka sink topic is {0}".format(self.config.recommendation_requests_topic))
             test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/test --name agent --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf"
@@ -126,6 +128,8 @@ class Orchestrator(object):
         config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name=template_file_name)
         config.set_value('a1.sinks.kafka_data.topic', self.config.data_topic)
         config.set_value('a1.sinks.kafka_rec.topic', self.config.recommendation_requests_topic)
+        config.set_value('a1.sinks.kafka_rec.brokerList', self.environment.kafka_hostport)
+        config.set_value('a1.sinks.kafka_data.brokerList', self.environment.kafka_hostport)
         config.generate(template_file_name)
         
     def run(self):
@@ -172,7 +176,7 @@ class Orchestrator(object):
     def do_run(self):
         self.create_topic_names()
         environment = self.gather_environment()
-        
+        self.environment = environment
         #self.evaluator_proxy = EvaluatorProxy(self.executor, environment)
         self.evaluator_proxy = ReplicatingEvaluatorProxy(self.executor, environment)
 
@@ -193,8 +197,10 @@ class Orchestrator(object):
         
         
         manager = self.reco_managers_by_name.itervalues().next()
-        manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol, recommendations_topic=self.config.recommendation_requests_topic,
-                                     recommendation_results_topic = environment.recommendation_results_topic)
+        manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol, 
+                                        recommendations_topic=self.config.recommendation_requests_topic,
+                                        recommendation_results_topic = environment.recommendation_results_topic, 
+                                        kafka_hostport=environment.kafka_hostport)
         
         self.start_recommendation_manager(environment.orchestrator_ip, recommendation_endpoint)
         
