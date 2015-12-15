@@ -137,12 +137,11 @@ class Orchestrator(object):
         
     def gather_environment(self):
         environment = IdomaarEnvironment()
-        datastream_config = self.read_yaml_config(os.path.join(self.datastreammanager, "vagrant.yml"))
         datastream_ip_address = socket.gethostbyname(socket.gethostname())
-        #datastream_ip_address = datastream_config['box']['ip_address']
+        
         #TODO: properly handle orchestrator location
         environment.orchestrator_ip = datastream_ip_address
-        zookeeper_port = datastream_config['zookeeper']['port']
+        zookeeper_port = 2181
         environment.zookeeper_hostport = "{host}:{port}".format(host=datastream_ip_address, port=zookeeper_port)
         environment.kafka_hostport = "{host}:9092".format(host=datastream_ip_address)
         environment.comp_env_address = self.config.computing_environment_address

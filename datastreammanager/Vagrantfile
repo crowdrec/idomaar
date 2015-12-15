@@ -1,13 +1,9 @@
-require 'yaml'
-settings = YAML.load_file 'vagrant.yml'
-
 ##################
 ### VIRTUALBOX ###
 ##################
-
 BOX_NAME   		= 'ubuntu/trusty64'
 BOX_URL       = 'https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box'
-box_ip_address = settings['box']['ip_address']
+box_ip_address = '192.168.22.5'
 
 
 ##################
@@ -26,11 +22,9 @@ AWS_PRIVATEKEY_PATH = ENV['AWS_PRIVATEKEY_PATH']
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = '2'
 
-
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = BOX_NAME
   config.vm.box_url = BOX_URL
-
   config.vm.network :private_network, ip: box_ip_address
 
   config.vm.provider :virtualbox do |vb|
@@ -54,6 +48,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     override.ssh.username = "ubuntu"
     override.ssh.private_key_path = AWS_PRIVATEKEY_PATH
   end
+
+  config.vm.provision "shell", inline: "bash /vagrant/vagrant/00.set-hosts.sh " + box_ip_address
 
   config.vm.provision "shell", path: "vagrant/01.java.sh"
   config.vm.provision "shell", path: "vagrant/02.maven.sh"

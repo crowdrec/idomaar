@@ -4,7 +4,7 @@
 #
 # processname: itembasedrec
 
-THIS_HOST_IP=$(hostname --ip-address)
+THIS_HOST_IP=$(hostname --ip-address | rev | cut -d' ' -f1 | rev)
 LOG=/tmp/mahout.log
 echo "itembasedrec service" $1 >> $LOG
 

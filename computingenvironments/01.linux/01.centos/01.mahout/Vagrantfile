@@ -37,7 +37,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	    	node_config.vm.box = node["box"]
 	    	node_config.vm.box_url = node["boxurl"]
 	      	node_config.vm.network :private_network, ip: node["ip"]
-	      	node_config.vm.hostname = node["hostname"]
 	      				
     		node_config.vm.provider 'virtualbox' do |v, override|
 				memory = node["ram"] ? node["ram"] : 512;
