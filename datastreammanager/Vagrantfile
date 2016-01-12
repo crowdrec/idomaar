@@ -33,6 +33,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.provider :aws do |aws, override|
     override.vm.box = 'dummy'
+    # Work around Vagrant AWS plugin bug
+    # https://github.com/mitchellh/vagrant/issues/5401
+    override.nfs.functional = false
 
     aws.access_key_id = AWS_ACCESS_KEY_ID
     aws.secret_access_key = AWS_SECRET_ACCESS_KEY
