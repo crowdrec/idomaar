@@ -165,7 +165,7 @@ class Orchestrator(object):
     def start_evaluator(self, environment):
         if self.config.newsreel:
             evaluator_command = 'java -jar /vagrant/newsreel-evaluator/target/newsreel-evaluator-0.0.1-SNAPSHOT-jar-with-dependencies.jar'
-            command = evaluator_command + " {orhcestrator_ip}:2181 {orhcestrator_ip}:9092 {results_topic} {ground_topic} {output_topic}".format(orchestrator_ip=environment.orchestrator_ip, results_topic=environment.recommendation_results_topic, ground_topic=environment.ground_truth_topic, output_topic='output')
+            command = evaluator_command + " {orchestrator_ip}:2181 {orchestrator_ip}:9092 {results_topic} {ground_topic} {output_topic}".format(orchestrator_ip=environment.orchestrator_ip, results_topic=environment.recommendation_results_topic, ground_topic=environment.ground_truth_topic, output_topic='output')
         else:
             command = "/opt/apache/spark/bin/spark-submit /vagrant/evaluator/eval.py {recommendation_target}/* {evaluation_result} /vagrant/evaluator/configuration.json".format(recommendation_target=self.recommendation_target.replace("fs:", ""), evaluation_result=self.evaluation_result_target)
 
