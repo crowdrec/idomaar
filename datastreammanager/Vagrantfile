@@ -12,7 +12,12 @@ box_ip_address = '192.168.22.5'
 AWS_REGION = 'us-west-2'
 AWS_KEYPAIR_NAME ='idomaar'
 AWS_INSTANCE_TYPE ='t2.small'
-AWS_AMI = 'ami-5189a661' #Ubuntu Server 14.04 LTS (HVM), SSD Volume Type
+
+if ENV['AMI_PREBUILT']
+  AWS_AMI = 'ami-c5e90ca5' #Idomaar computing environment v2
+else
+  AWS_AMI = 'ami-5189a661' #Ubuntu Server 14.04 LTS (HVM), SSD Volume Type
+end
 
 AWS_ACCESS_KEY_ID = ENV['AWS_ACCESS_KEY_ID']
 AWS_SECRET_ACCESS_KEY = ENV['AWS_SECRET_ACCESS_KEY']
@@ -52,20 +57,21 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     override.ssh.private_key_path = AWS_PRIVATEKEY_PATH
   end
 
-  config.vm.provision "shell", inline: "bash /vagrant/vagrant/00.set-hosts.sh " + box_ip_address
 
-  config.vm.provision "shell", path: "vagrant/01.java.sh"
-  config.vm.provision "shell", path: "vagrant/02.maven.sh"
-  config.vm.provision "shell", path: "vagrant/03.zookeeper.sh"
-  config.vm.provision "shell", path: "vagrant/04.flume-plugins.sh"
-  config.vm.provision "shell", path: "vagrant/05.kafka.sh"
-  config.vm.provision "shell", path: "vagrant/06.create-kafka-topic.sh"
-  config.vm.provision "shell", path: "vagrant/08.orchestrator-dependencies.sh"
-  config.vm.provision "shell", path: "vagrant/09.newsreel-evaluator.sh"
+  if not ENV['AMI_PREBUILT']
+    config.vm.provision "shell", inline: "bash /vagrant/vagrant/00.set-hosts.sh " + box_ip_address
+    config.vm.provision "shell", path: "vagrant/01.java.sh"
+    config.vm.provision "shell", path: "vagrant/02.maven.sh"
+    config.vm.provision "shell", path: "vagrant/03.zookeeper.sh"
+    config.vm.provision "shell", path: "vagrant/04.flume-plugins.sh"
+    config.vm.provision "shell", path: "vagrant/05.kafka.sh"
+    config.vm.provision "shell", path: "vagrant/06.create-kafka-topic.sh"
+    config.vm.provision "shell", path: "vagrant/08.orchestrator-dependencies.sh"
+    config.vm.provision "shell", path: "vagrant/09.newsreel-evaluator.sh"
 
-
-  # SPARK EVALUATOR
-  config.vm.provision "shell", path: "vagrant/10.spark.sh"
+    # SPARK EVALUATOR
+    config.vm.provision "shell", path: "vagrant/10.spark.sh"
+  end
 
 
 

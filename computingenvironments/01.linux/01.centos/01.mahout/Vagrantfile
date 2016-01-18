@@ -4,9 +4,8 @@
 ##################
 ### VIRTUALBOX ###
 ##################
-BOX_NAME   	  = 'ubuntu/trusty64'
-BOX_URI       = 'https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box'
-
+BOX_NAME = 'ubuntu/trusty64'
+BOX_URI = 'https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box'
 
 
 ##################
@@ -15,7 +14,13 @@ BOX_URI       = 'https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-s
 AWS_REGION = 'us-west-2'
 AWS_KEYPAIR_NAME ='idomaar'
 AWS_INSTANCE_TYPE ='t2.small'
-AWS_AMI = 'ami-5189a661' #Ubuntu Server 14.04 LTS (HVM), SSD Volume Type
+
+
+if ENV['AMI_PREBUILT']
+  AWS_AMI = 'ami-73f61313' #Ubuntu server with mahout and simple algorithm installed
+else
+  AWS_AMI = 'ami-5189a661' #Ubuntu Server 14.04 LTS (HVM), SSD Volume Type
+end
 
 AWS_ACCESS_KEY_ID = ENV['AWS_ACCESS_KEY_ID']
 AWS_SECRET_ACCESS_KEY = ENV['AWS_SECRET_ACCESS_KEY']
@@ -23,7 +28,7 @@ AWS_PRIVATEKEY_PATH = ENV['AWS_PRIVATEKEY_PATH']
 
 
 nodes = [
-  { "node_id" => 1, "hostname" => 'mahout',   "ip" => '192.168.22.100', "box" => BOX_NAME, "boxurl" => BOX_URI, "ram" => 512, "role" => 'fe'}
+    {"node_id" => 1, "hostname" => 'mahout', "ip" => '192.168.22.100', "box" => BOX_NAME, "boxurl" => BOX_URI, "ram" => 512, "role" => 'fe'}
 ]
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
@@ -31,50 +36,52 @@ VAGRANTFILE_API_VERSION = '2'
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
-	nodes.each do |node|
-		
-		config.vm.define node["hostname"] do |node_config|
-	    	node_config.vm.box = node["box"]
-	    	node_config.vm.box_url = node["boxurl"]
-	      	node_config.vm.network :private_network, ip: node["ip"]
-	      				
-    		node_config.vm.provider 'virtualbox' do |v, override|
-				memory = node["ram"] ? node["ram"] : 512;
-				v.customize ['modifyvm', :id,
-				             '--name', node["hostname"],
-				             '--memory', memory.to_s
-				             ]
+  nodes.each do |node|
+
+    config.vm.define node["hostname"] do |node_config|
+      node_config.vm.box = node["box"]
+      node_config.vm.box_url = node["boxurl"]
+      node_config.vm.network :private_network, ip: node["ip"]
+
+      node_config.vm.provider 'virtualbox' do |v, override|
+        memory = node["ram"] ? node["ram"] : 512;
+        v.customize ['modifyvm', :id,
+                     '--name', node["hostname"],
+                     '--memory', memory.to_s
+                    ]
+      end
+
+      node_config.vm.provider :aws do |aws, override|
+        override.vm.box = 'dummy'
+
+        aws.access_key_id = AWS_ACCESS_KEY_ID
+        aws.secret_access_key = AWS_SECRET_ACCESS_KEY
+
+        aws.keypair_name = AWS_KEYPAIR_NAME
+        aws.ami = AWS_AMI
+        aws.instance_type = AWS_INSTANCE_TYPE
+        aws.region = AWS_REGION
+        aws.tags = {
+            'Name' => "Idomaar Mahout example"
+        }
+
+        override.ssh.username = "ubuntu"
+        override.ssh.private_key_path = AWS_PRIVATEKEY_PATH
+      end
+
+      if not ENV['AMI_PREBUILT']
+        # Provisioning puppet on boxes
+        node_config.vm.provision 'shell', inline: 'apt-get -q -y update'
+        node_config.vm.provision 'shell', inline: 'apt-get -q -y install puppet'
+
+        node_config.vm.provision 'puppet' do |puppet|
+          puppet.manifests_path = 'puppet/manifests'
+          puppet.manifest_file = 'site.pp'
+          puppet.module_path = 'puppet/modules'
         end
+      end
 
-				node_config.vm.provider :aws do |aws, override|
-					override.vm.box = 'dummy'
+    end
+  end
 
-					aws.access_key_id = AWS_ACCESS_KEY_ID
-					aws.secret_access_key = AWS_SECRET_ACCESS_KEY
-
-					aws.keypair_name = AWS_KEYPAIR_NAME
-					aws.ami = AWS_AMI
-					aws.instance_type = AWS_INSTANCE_TYPE
-					aws.region = AWS_REGION
-					aws.tags = {
-							'Name' => "Idommar Mahout example"
-					}
-
-					override.ssh.username = "ubuntu"
-					override.ssh.private_key_path = AWS_PRIVATEKEY_PATH
-				end
-
-      		# Provisioning puppet on boxes
-				node_config.vm.provision 'shell', inline: 'apt-get -q -y update'
-		    node_config.vm.provision 'shell', inline: 'apt-get -q -y install puppet'
-		            
-      		node_config.vm.provision 'puppet' do |puppet|  
-				puppet.manifests_path 	= 'puppet/manifests'
-				puppet.manifest_file	= 'site.pp'          
-				puppet.module_path 		= 'puppet/modules'     
-			end                                           
-      		
-   		end
-  	end
-  	  	
 end
