@@ -6,9 +6,10 @@ BOX_URL       = 'https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-s
 box_ip_address = '192.168.22.5'
 
 
-##################
-### AMAZON AWS ###
-##################
+#################################
+### AMAZON AWS                ###
+### DEFAULT REGION IS OREGON  ###
+#################################
 AWS_REGION = 'us-west-2'
 AWS_KEYPAIR_NAME ='idomaar'
 AWS_INSTANCE_TYPE ='t2.small'
@@ -19,6 +20,7 @@ else
   AWS_AMI = 'ami-5189a661' #Ubuntu Server 14.04 LTS (HVM), SSD Volume Type
 end
 
+### ENVIRONMENT VARIABLES
 AWS_ACCESS_KEY_ID = ENV['AWS_ACCESS_KEY_ID']
 AWS_SECRET_ACCESS_KEY = ENV['AWS_SECRET_ACCESS_KEY']
 AWS_PRIVATEKEY_PATH = ENV['AWS_PRIVATEKEY_PATH']
@@ -38,6 +40,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.provider :aws do |aws, override|
     override.vm.box = 'dummy'
+    override.vm.box_url = 'https://github.com/mitchellh/vagrant-aws/raw/master/dummy.box'
+
     # Work around Vagrant AWS plugin bug
     # https://github.com/mitchellh/vagrant/issues/5401
     override.nfs.functional = false
