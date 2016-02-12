@@ -15,12 +15,24 @@ AWS_REGION = 'us-west-2'
 AWS_KEYPAIR_NAME ='idomaar'
 AWS_INSTANCE_TYPE ='t2.small'
 
+if not ENV['AWS_REGION'].nil?
+  AWS_REGION = ENV['AWS_REGION']
+end
+
+if not ENV['AWS_KEYPAIR_NAME'].nil?
+  AWS_KEYPAIR_NAME = ENV['AWS_KEYPAIR_NAME']
+end
+
+if not ENV['AWS_INSTANCE_TYPE'].nil?
+  AWS_INSTANCE_TYPE = ENV['AWS_INSTANCE_TYPE']
+end
 
 if ENV['AMI_PREBUILT']
   AWS_AMI = 'ami-73f61313' #Ubuntu server with mahout and simple algorithm installed
 else
   AWS_AMI = 'ami-5189a661' #Ubuntu Server 14.04 LTS (HVM), SSD Volume Type
 end
+
 
 AWS_ACCESS_KEY_ID = ENV['AWS_ACCESS_KEY_ID']
 AWS_SECRET_ACCESS_KEY = ENV['AWS_SECRET_ACCESS_KEY']

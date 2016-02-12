@@ -8,11 +8,22 @@ box_ip_address = '192.168.22.5'
 
 #################################
 ### AMAZON AWS                ###
-### DEFAULT REGION IS OREGON  ###
 #################################
 AWS_REGION = 'us-west-2'
 AWS_KEYPAIR_NAME ='idomaar'
 AWS_INSTANCE_TYPE ='t2.small'
+
+if not ENV['AWS_REGION'].nil?
+  AWS_REGION = ENV['AWS_REGION']
+end
+
+if not ENV['AWS_KEYPAIR_NAME'].nil?
+  AWS_KEYPAIR_NAME = ENV['AWS_KEYPAIR_NAME']
+end
+
+if not ENV['AWS_INSTANCE_TYPE'].nil?
+  AWS_INSTANCE_TYPE = ENV['AWS_INSTANCE_TYPE']
+end
 
 if ENV['AMI_PREBUILT']
   AWS_AMI = 'ami-c5e90ca5' #Idomaar computing environment v2
