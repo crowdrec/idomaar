@@ -5,3 +5,4 @@ generated
 .classpath
 .settings
 .project
+*.iml

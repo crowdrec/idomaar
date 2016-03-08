@@ -1,7 +1,7 @@
 #!/bin/sh -Eux
 
 cd /tmp
-wget -nv -O zookeeper.tgz http://www.eu.apache.org/dist/zookeeper/stable/zookeeper-3.4.6.tar.gz
+wget -nv -O zookeeper.tgz http://www.eu.apache.org/dist/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz
 
 tar -xvf zookeeper.tgz
 mkdir -p /opt/apache

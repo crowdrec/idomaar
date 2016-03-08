@@ -11,7 +11,7 @@ ln -s /opt/apache/apache-flume-1.6.0-bin/ flume
 mkdir -p /var/log/flume-ng
 
 cd /vagrant/flume-plugins/flume-plugin-idomaar
-/opt/apache/apache-maven-3.2.3/bin/mvn clean install
+/opt/apache/apache-maven-3.2.3/bin/mvn clean install -DskipTests
 
 # INSTALL IDOMAAR PLUGIN IN FLUME DIRECTORY
 mkdir -p /opt/apache/flume/plugins.d/idomaar/lib
