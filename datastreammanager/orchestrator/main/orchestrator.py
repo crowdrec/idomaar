@@ -3,6 +3,7 @@ import datetime
 import logging
 import yaml
 from http_comp_env import HttpComputingEnvironmentProxy
+from idomaar_data_source import IdomaarDataSource
 from recommendation_manager import RecommendationManager
 from util import timed_exec
 from zmq_comp_env import ZmqComputingEnvironmentProxy
@@ -14,6 +15,7 @@ from generated_flume_config import FlumeConfig
 import socket
 
 logger = logging.getLogger("orchestrator")
+
 
 class Orchestrator(object):
 
@@ -105,7 +107,12 @@ class Orchestrator(object):
 
             config.generate()
             logger.info("Start feeding data to Flume, Kafka sink topic is {0}".format(self.config.recommendation_requests_topic))
-            test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/test --name agent --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf"
+
+            flume_conf_file = '/vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf'
+            flume_log_conf_dir = '/vagrant/flume-config/log4j/test'
+            #flume_classpath = '/opt/apache/flume/plugins.d/idomaar/libext/httpcore-4.3.2.jar:/opt/apache/flume/plugins.d/idomaar/libext/httpclient-4.3.4.jar'
+            test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf {flume_log_conf_dir} --name agent --conf-file {flume_conf_file}" \
+                .format(flume_conf_file=flume_conf_file, flume_log_conf_dir=flume_log_conf_dir, flume_classpath=flume_classpath)
             self.executor.start_on_data_stream_manager(command=test_data_feed_command, process_name="to-kafka-flume")
         elif self.config.input_data == 'test':
             self.create_flume_config('idomaar-TO-kafka-test.conf')
@@ -114,9 +121,9 @@ class Orchestrator(object):
             test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.config.test_uri + " -Didomaar.sourceType=file"
             self.executor.run_on_data_stream_manager(test_data_feed_command)
         elif self.config.input_data == 'split':
-            input_file_location = '/vagrant/input/' + self.config.data_source
-            self.check_exists(input_file_location) 
-            self.evaluator_proxy.start_splitter(input_file_location)
+            idomaar_data_source = IdomaarDataSource(self.config.data_source)
+            idomaar_data_source.check()
+            self.evaluator_proxy.start_splitter(idomaar_data_source)
             
             
     def start_recommendation_manager(self, orchestrator_ip, recommendation_endpoint):

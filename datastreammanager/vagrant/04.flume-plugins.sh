@@ -17,6 +17,10 @@ cd /vagrant/flume-plugins/flume-plugin-idomaar
 mkdir -p /opt/apache/flume/plugins.d/idomaar/lib
 mkdir -p /opt/apache/flume/plugins.d/idomaar/libext
 
+#Remove htppclient jars from flume lib dir, idomaar plugin provides its own version
+rm /opt/apache/flume/lib/httpclient*jar
+rm /opt/apache/flume/lib/httpcore*jar
+
 cp target/flume-plugin-idomaar-*.jar /opt/apache/flume/plugins.d/idomaar/lib
 cp target/lib/*jar /opt/apache/flume/plugins.d/idomaar/libext
 

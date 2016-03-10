@@ -40,13 +40,14 @@ class LocalExecutor:
     def start_on_data_stream_manager(self, command, process_name, exit_on_failure=True, sudo=True):
         """Start a command asynchronously on the data stream manager VM."""
         command_list = command.split(" ")
-        if sudo: command_list.insert(0, "sudo")
+        if sudo:
+            command_list.insert(0, "sudo")
+            command_list.insert(1, "-E")
         result = self.execute_in_background(command=command_list, working_dir=self.datastream_manager_working_dir,
                                      subprocess_logger=logging.getLogger("bg:" + process_name), exit_on_failure=exit_on_failure)
     
     def process_runner(self, command, working_dir, subprocess_logger, exit_on_failure=False, default_relog_level='info'):
         command_string = ' '.join(command)
-        subprocess_logger.debug("Starting process " + command_string)
         output_lines = list()
         process = subprocess.Popen(command, env=os.environ, cwd=working_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
         while True:
@@ -58,7 +59,7 @@ class LocalExecutor:
         exit_code = process.wait()
         if not exit_on_failure:
             subprocess_logger.info("Process exited with exit code {0}".format(exit_code))
-            output_lines.insert(0,exit_code)
+            output_lines.insert(0, exit_code)
             return output_lines
         elif exit_code == 130:
             logger.warn("Exit code 130 received: process {name} is interrupted.".format(name=command_string))
@@ -97,7 +98,7 @@ class LocalExecutor:
         self.process_runner(command, working_dir, subprocess_logger, exit_on_failure)[0]
 
     def start_datastream(self):
-        logger.debug("*We* are the datastream vm." )
+        logger.debug("*We* are the datastream vm.")
 
     def start_computing_environment(self):
         logger.warn("Cannot start computing environment from datastream vm, it must be started externally.")

@@ -1,10 +1,9 @@
 import httplib
 import logging
 import requests
-from orchestrator_exceptions import TimeoutException
-from requests.adapters import HTTPAdapter
 
 logger = logging.getLogger("computing-environment-http")
+
 
 class HttpComputingEnvironmentProxy:
     """A class capable of communicating with a computing environment over HTTP."""

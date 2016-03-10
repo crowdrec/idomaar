@@ -153,7 +153,7 @@ class OrchestratorCli(cli.Application):
             logger.info("Data source: {0}".format(self.data_source))
         else:
             if self.training_uri is not None: logger.info("Training data URI: %s" % self.training_uri)
-            elif not self.skip_training_cycle: raise "No training URI is set (and training required)." 
+            elif not self.skip_training_cycle: raise "No training URI is set (and training is required)."
             if self.test_uri is not None: logger.info("Test data URI: %s" % self.test_uri)
             else: raise "No test URI is set."
             
