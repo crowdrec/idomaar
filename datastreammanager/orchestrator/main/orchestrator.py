@@ -110,9 +110,8 @@ class Orchestrator(object):
 
             flume_conf_file = '/vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf'
             flume_log_conf_dir = '/vagrant/flume-config/log4j/test'
-            #flume_classpath = '/opt/apache/flume/plugins.d/idomaar/libext/httpcore-4.3.2.jar:/opt/apache/flume/plugins.d/idomaar/libext/httpclient-4.3.4.jar'
             test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf {flume_log_conf_dir} --name agent --conf-file {flume_conf_file}" \
-                .format(flume_conf_file=flume_conf_file, flume_log_conf_dir=flume_log_conf_dir, flume_classpath=flume_classpath)
+                .format(flume_conf_file=flume_conf_file, flume_log_conf_dir=flume_log_conf_dir)
             self.executor.start_on_data_stream_manager(command=test_data_feed_command, process_name="to-kafka-flume")
         elif self.config.input_data == 'test':
             self.create_flume_config('idomaar-TO-kafka-test.conf')
