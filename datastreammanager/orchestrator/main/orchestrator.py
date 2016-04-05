@@ -178,12 +178,10 @@ class Orchestrator(object):
         #self, command, exit_on_failure=True, capture_output=True, default_relog_level='info'
         self.executor.run_on_data_stream_manager(command=command, exit_on_failure=True)
 
-
     def do_run(self):
         self.create_topic_names()
         environment = self.gather_environment()
         self.environment = environment
-        #self.evaluator_proxy = EvaluatorProxy(self.executor, environment)
         self.evaluator_proxy = ReplicatingEvaluatorProxy(self.executor, environment)
 
         self.executor.start_datastream()
@@ -200,18 +198,13 @@ class Orchestrator(object):
             recommendation_endpoint = self.config.computing_environment_address
 
         self.feed_test_data()
-        
-        
+
         manager = self.reco_managers_by_name.itervalues().next()
         manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol, 
                                         recommendations_topic=self.config.recommendation_requests_topic,
                                         recommendation_results_topic = environment.recommendation_results_topic, 
                                         kafka_hostport=environment.kafka_hostport)
-        
         self.start_recommendation_manager(environment.orchestrator_ip, recommendation_endpoint)
-        
-#         for reco_manager in self.reco_managers_by_name.itervalues():
-#             reco_manager.start(orchestrator_ip, recommendation_endpoint)
 
         ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
         ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS

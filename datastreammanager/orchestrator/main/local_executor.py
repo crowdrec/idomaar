@@ -29,6 +29,7 @@ class LocalExecutor:
         """
         command_list = command.split(" ")
         command_list.insert(0, "sudo")
+        command_list.insert(1, "-E")
         vagrant_command_string = ' '.join(command_list)
         logger.debug("On data stream manager, executing command " + vagrant_command_string)
         result = self.process_runner(command=command_list, working_dir=self.datastream_manager_working_dir,
@@ -66,7 +67,8 @@ class LocalExecutor:
         elif exit_code != 0:
             logger.error("Error occurred while executing {name} in directory {working_dir}, exit code is {code}. Exiting.".format(name=command_string, working_dir=working_dir, code=exit_code))
             sys.exit(1)
-        else: logger.debug("Command '" + command_string + "' is successful.")
+        else:
+            logger.debug("Command '" + command_string + "' is successful.")
         return output_lines
     
     def execute_in_background(self, command, working_dir, subprocess_logger, exit_on_failure):
