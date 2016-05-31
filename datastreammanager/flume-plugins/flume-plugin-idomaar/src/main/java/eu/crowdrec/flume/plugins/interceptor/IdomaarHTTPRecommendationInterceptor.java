@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpConnectionManager;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
@@ -21,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.crowdrec.contest.sender.LogFileUtils;
+import org.zeromq.ZMQ;
+import org.zeromq.ZMsg;
 
 /**
  * This class integrates a http service into to flume based stream.
@@ -49,7 +52,6 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 	 */
 	private static final Logger logger = LoggerFactory.getLogger(IdomaarHTTPRecommendationInterceptor.class);
 
-	
 	/**
 	 * hostName and port as string 
 	 */
@@ -57,13 +59,20 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 	
 	private long eventCounter = 0L;
 
+	private final String orchestratorHostport;
+	private ZMQ.Socket orchestratorConnection;
+	private final String recommendationAgentName;
+
 	/**
 	 * The constructor
 	 * 
 	 * @param _hostnameAndPort hostName:port
 	 */
-	public IdomaarHTTPRecommendationInterceptor(String _hostnameAndPort) {
+	public IdomaarHTTPRecommendationInterceptor(String _hostnameAndPort, String orchestratorHostport, String recommendationAgentName) {
 		this._hostnameAndPort = _hostnameAndPort;
+		this.orchestratorHostport = orchestratorHostport;
+		this.recommendationAgentName = recommendationAgentName;
+		orchestratorConnection = ZMQ.context(1).socket(ZMQ.REQ);
 	}
 
 	/**
@@ -73,6 +82,8 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 	@Override
 	public void initialize() {
 		logger.info("Launched httpClient client, connecting to " + _hostnameAndPort);
+		orchestratorConnection.connect(orchestratorHostport);
+		logger.info("Launched 0MQ client to connect to orchestrator, bind to " + orchestratorHostport);
 	}
 
 	/** 
@@ -87,8 +98,16 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 			if (eventCounter % 100 == 0) logger.info("Processed {} events.", eventCounter);
 			String body = new String(event.getBody(), "UTF-8");
 //			logger.info("Input event body: {}", body);
-			if (body != null && body.trim().contains("END")) {
+			if (body != null && (body.trim().contains("END") || body.trim().contains("EOF"))) {
 				logger.info("Received <END> event, sending it down the channel.");
+
+				orchestratorConnection.sendMore("FINISHED");
+				orchestratorConnection.send(recommendationAgentName, ZMQ.NOBLOCK);
+				logger.info("Sent 'FINISHED' to orchestrator, waiting for reply ...");
+				ZMsg reply =  ZMsg.recvMsg(orchestratorConnection);
+				logger.info("Received reply :" + reply.remove().toString());
+
+
 				event.setHeaders(new HashMap<String, String>());
 				event.setBody("<END>".getBytes(Charset.forName("UTF-8")));
 				return event;
@@ -186,16 +205,25 @@ public class IdomaarHTTPRecommendationInterceptor implements Interceptor {
 
 	public static class Builder implements Interceptor.Builder {
 		private String _hostnameAndPort;
+		private String orchestratorHostport;
+		private String recommendationManagerName;
 
 		@Override
 		public Interceptor build() {
-			return new IdomaarHTTPRecommendationInterceptor(
-					this._hostnameAndPort);
+			return new IdomaarHTTPRecommendationInterceptor(_hostnameAndPort, orchestratorHostport, recommendationManagerName);
+		}
+
+		private String retrieveProperty(Context context, String systemPropertyName, String contextPropertyName) {
+			String systemProperty = System.getProperty(systemPropertyName);
+			if (systemProperty != null) return systemProperty;
+			return context.getString(contextPropertyName);
 		}
 
 		@Override
 		public void configure(Context ctx) {
 			// Retrieve property from flume conf
+			this.orchestratorHostport = retrieveProperty(ctx, "idomaar.orchestrator.hostname", "orchestratorZeromqSocket");
+			this.recommendationManagerName = Preconditions.checkNotNull(retrieveProperty(ctx, "idomaar.recommendation.manager.name", "recommendationManagerName"));
 
 			if (System.getProperty("idomaar.recommendation.hostname") != null) {
 				this._hostnameAndPort = System

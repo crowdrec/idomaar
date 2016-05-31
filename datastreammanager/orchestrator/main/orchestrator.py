@@ -99,7 +99,7 @@ class Orchestrator(object):
 
     def feed_test_data(self):
         if self.config.input_data == 'recommend': 
-            logger.info("Data treated as recommendation requests, sending directly to topic " + self.config.recommendation_requests_topic)
+            logger.info("Test phase: data treated as recommendation requests, sending directly to topic " + self.config.recommendation_requests_topic)
             config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name='idomaar-TO-kafka-direct.conf')
             config.set_value('agent.sinks.kafka_sink.topic', self.config.recommendation_requests_topic)
             config.set_value('agent.sources.idomaar_source.fileName', self.config.data_source)
@@ -114,12 +114,14 @@ class Orchestrator(object):
                 .format(flume_conf_file=flume_conf_file, flume_log_conf_dir=flume_log_conf_dir)
             self.executor.start_on_data_stream_manager(command=test_data_feed_command, process_name="to-kafka-flume")
         elif self.config.input_data == 'test':
+            logger.info("Test phase: Input data treated as test data.")
             self.create_flume_config('idomaar-TO-kafka-test.conf')
             logger.info("Start feeding test data to queue")
             ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
             test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.config.test_uri + " -Didomaar.sourceType=file"
             self.executor.run_on_data_stream_manager(test_data_feed_command)
         elif self.config.input_data == 'split':
+            logger.info("Test phase: input data treated as test data.")
             idomaar_data_source = IdomaarDataSource(self.config.data_source)
             idomaar_data_source.check()
             self.evaluator_proxy.start_splitter(idomaar_data_source)
