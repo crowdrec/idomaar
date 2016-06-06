@@ -10,11 +10,11 @@ su - ipython
 cd
 ipython profile create pyspark
 
-cp /vagrant/vagrant/cloudera/ipython/00-pyspark-setup.py .ipython/profile_pyspark/startup
-cp /vagrant/vagrant/cloudera/ipython/ipython_notebook_config.py .ipython/profile_pyspark/
+cp /vagrant/vagrant/ipython/00-pyspark-setup.py .ipython/profile_pyspark/startup
+cp /vagrant/vagrant/ipython/ipython_notebook_config.py .ipython/profile_pyspark/
 
-cp /vagrant/vagrant/cloudera/ipython/start-ipython.sh /home/ipython
-cp /vagrant/vagrant/cloudera/ipython/log4j.properties /etc/spark/conf
+cp /vagrant/vagrant/ipython/start-ipython.sh /home/ipython
+cp /vagrant/vagrant/ipython/log4j.properties /etc/spark/conf
 #chmod +x start-ipython.sh
 
 #todo

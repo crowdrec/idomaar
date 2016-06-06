@@ -148,6 +148,9 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
 		} else if (schema.equalsIgnoreCase("file")) {
 			streamReader = new FileStreamReader(uri.toURL());
 			logger.info("Initialized stream for scheme " + uri.getScheme());
+		} else if (schema.equalsIgnoreCase("s3")) {
+			streamReader = new S3StreamReader(uri);
+			logger.info("Initialized S3 stream reader for scheme " + uri.getScheme());
 		} else {
 			logger.error("Unable to read stream for scheme [" + uri.getScheme() + "]");
 		}

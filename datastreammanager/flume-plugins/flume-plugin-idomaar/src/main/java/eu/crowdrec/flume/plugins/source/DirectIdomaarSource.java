@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.List;
@@ -33,6 +34,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3URI;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.EventDrivenSource;
@@ -53,6 +61,7 @@ public class DirectIdomaarSource extends AbstractSource implements EventDrivenSo
 	private static final List<String> FORMATS = Lists.newArrayList("plain", "gzip");
 
 	private String fileName;
+	private String url;
 	private Charset charset;
 	private String format;
 	private int batchSize = 100;
@@ -60,7 +69,8 @@ public class DirectIdomaarSource extends AbstractSource implements EventDrivenSo
 	private BufferedReader reader;
 	
 	private volatile boolean endSent;
-	
+
+
 	private class EventCreator implements Runnable {
 
 		@Override
@@ -86,6 +96,7 @@ public class DirectIdomaarSource extends AbstractSource implements EventDrivenSo
 					eventBatch.add(event);
 					endSent = true;
 				}
+				logger.trace("Sending batch of size {} down to processing pipeline.", batch.size());
 				getChannelProcessor().processEventBatch(eventBatch);
 				if (batch.size() < batchSize) stop();
 			}
@@ -102,30 +113,54 @@ public class DirectIdomaarSource extends AbstractSource implements EventDrivenSo
 
 	@Override
 	public void configure(Context context) {
+		url = context.getString("url", null);
 		fileName = context.getString("fileName", null);
 		charset = Charset.forName(context.getString("charset", "UTF-8"));
 		format = context.getString("format", null);
 		if (fileName == null) throw new RuntimeException("File name is not configured for " + getClass().getSimpleName());
 		if (format == null || !FORMATS.contains(format)) throw new RuntimeException("Format not specified or unknown " + format);
 	}
-	
-	@Override
-	public void start() {
-		logger.info("Starting source with file name {}", fileName);
-		super.start();
+
+	private BufferedReader createReader() {
 		try {
+			if (url != null) return createReaderFromUrl();
 			File inputFile = new File(fileName);
 			if (format.equals("plain")) {
-				reader = Files.newBufferedReader(inputFile.toPath(), charset);
+				return Files.newBufferedReader(inputFile.toPath(), charset);
 			} else if (format.equals("gzip")) {
 				InputStream fileStream = new FileInputStream(inputFile);
 				InputStream gzipStream = new GZIPInputStream(fileStream);
 				Reader decoder = new InputStreamReader(gzipStream, "UTF-8");
-				reader = new BufferedReader(decoder);
+				return new BufferedReader(decoder);
 			}
 		} catch (IOException exception) {
-			throw new RuntimeException();
+			throw new RuntimeException(exception);
 		}
+		throw new RuntimeException("Unrecognized settings in DirectIdomaarSource: cannot figure out input source location.");
+	}
+
+	private AWSCredentials createAWSCreditentials() {
+		return AwsCreditentialsFactory.createAWSCreditentials();
+	}
+
+	private BufferedReader createReaderFromUrl() throws IOException {
+		if (url.startsWith("s3://")) {
+			logger.info("Reading resource {} from Amazon S3.", url);
+			AmazonS3 s3 = new AmazonS3Client(createAWSCreditentials());
+			AmazonS3URI amazonURI = new AmazonS3URI(url);
+			GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(amazonURI.getBucket(), amazonURI.getKey());
+			URL httpUrl = s3.generatePresignedUrl(request);
+			InputStream inp = httpUrl.openStream();
+			return new BufferedReader(new InputStreamReader(inp));
+		}
+		throw new RuntimeException("Can only handle s3:// scheme. Cannot use URL " + url);
+	}
+
+	@Override
+	public void start() {
+		logger.info("Starting source with URL {}, file name {}", url, fileName);
+		super.start();
+		reader = createReader();
 		new Thread(new EventCreator()).start();
 	}
 	

@@ -11,9 +11,9 @@ sc = SparkContext(conf=conf)
 inputFile = sys.argv[1]
 if sys.argv[1] == '--help':
     print '''spark-submit eval.py recommendationFile outputFile configuration.json
-        example configuration.json: [{"mode": "recall@N", "Nlist": [1, 2, 5, 10]}, {"mode": "CTR"}, {"mode": "precision"},
-        {"mode": "precision@N", "Nlist": [1, 2, 5, 10]}]
-        Already implemented: recall@N, precision, precision@N
+        example configuration.json: [{"mode": "recall@N", "Nlist": [1, 2, 5, 10]}, {"mode": "CTR"}, {"mode": "avg_precision"},
+        {"mode": "avg_precision@N", "Nlist": [1, 2, 5, 10]}]
+        Already implemented: recall@N, avg_precision, avg_precision@N
     '''
      
 
@@ -77,30 +77,30 @@ for pos,configuration in enumerate(configurations):
 
             
                 
-        elif configuration['mode'] == 'precision':
+        elif configuration['mode'] == 'avg_precision':
                 computedHits = dataRDD.map(lambda x: evalRecall(x,[-1])).persist()
                 tot_Rec = float(computedHits.map(lambda x: x['RecLength']).sum())
                 tot_Hit = computedHits.map(lambda x: x['hits']).sum()
-                print "Precision:", tot_Hit/tot_Rec
-                res['metrics']['precision'] = tot_Hit/tot_Rec
+                print "Average Precision:", tot_Hit/tot_Rec
+                res['metrics']['avg_precision'] = tot_Hit/tot_Rec
                 
                 
-        elif configuration['mode'] == 'precision@N':
+        elif configuration['mode'] == 'avg_precision@N':
             computedHits = dataRDD.map(lambda x: evalRecall(x,NList=NList)).persist()
             NList = configuration['Nlist'] 
-            res['metrics']['precision@N'] = {}
+            res['metrics']['avg_precision@N'] = {}
             base_num_rec = float(dataRDD.count())
             for N in NList:
                 num_rec = N * base_num_rec
                 score = computedHits.map(lambda x: x[N]).sum()/num_rec
-                print "Precision@"+str(N)+":",score
-                res['metrics']['precision@N']['precision@'+str(N)] = score
+                print "Average Precision@"+str(N)+":",score
+                res['metrics']['avg_precision@N']['avg_precision@'+str(N)] = score
             
             
 
         else: 
             print "Sorry, noone has implemented",configuration['mode'],"evaluation method."
-            print "Currently you can use 'recall@N', 'precision'."
+            print "Currently you can use 'recall@N', 'avg_precision'."
     except Exception:
         print "The",str(pos)+"-th configuration of your json has some issue."
 try:
@@ -120,8 +120,8 @@ except Exception:
 # execfile("/opt/util.py")
 # inputFile = '/tmp/test_data'
 # outputFile = '/tmp/outTest'
-# configurations = [{"mode": "recall@N", "Nlist": [1, 2, 5, 10]}, {"mode": "CTR"}, {"mode": "precision"},
-#         {"mode": "precision@N", "Nlist": [1, 2, 5, 10]}]
+# configurations = [{"mode": "recall@N", "Nlist": [1, 2, 5, 10]}, {"mode": "CTR"}, {"mode": "avg_precision"},
+#         {"mode": "avg_precision@N", "Nlist": [1, 2, 5, 10]}]
 # print configurations
 
 # def evalRecall(x,NList=[1,2,5,10]):

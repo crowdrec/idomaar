@@ -74,7 +74,7 @@ public class EvaluatorApp {
 	public static void main(String[] args) throws Exception {
 		Logger root = Logger.getRootLogger();
 	    root.addAppender(new ConsoleAppender(new PatternLayout(PatternLayout.TTCC_CONVERSION_PATTERN)));
-	    root.setLevel(Level.INFO);
+	    root.setLevel(Level.WARN);
 		new EvaluatorApp().run(args);
 		
 	}

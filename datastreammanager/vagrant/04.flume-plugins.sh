@@ -11,19 +11,23 @@ ln -s /opt/apache/apache-flume-1.6.0-bin/ flume
 mkdir -p /var/log/flume-ng
 
 cd /vagrant/flume-plugins/flume-plugin-idomaar
-/opt/apache/apache-maven-3.2.3/bin/mvn clean install
+/opt/apache/apache-maven-3.2.3/bin/mvn clean install -DskipTests
 
 # INSTALL IDOMAAR PLUGIN IN FLUME DIRECTORY
 mkdir -p /opt/apache/flume/plugins.d/idomaar/lib
 mkdir -p /opt/apache/flume/plugins.d/idomaar/libext
+
+#Remove htppclient jars from flume lib dir, idomaar plugin provides its own version
+rm /opt/apache/flume/lib/httpclient*jar
+rm /opt/apache/flume/lib/httpcore*jar
 
 cp target/flume-plugin-idomaar-*.jar /opt/apache/flume/plugins.d/idomaar/lib
 cp target/lib/*jar /opt/apache/flume/plugins.d/idomaar/libext
 
 useradd flume
 
-### COPY ENVIRONMENT CONFIGURATION FOR CLOUDERA
-sudo ln /usr/lib/zookeeper/zookeeper-3.4.5-cdh5.4.5.jar /opt/apache/flume/lib -s
+### COPY ENVIRONMENT CONFIGURATION 
+sudo ln /opt/apache/zookeeper/zookeeper-3.4.6.jar /opt/apache/flume/lib -s
 
 
 # INSTALL PATCHED KAFKA PLUGIN, RESOLVE ERROR IN PARTITION KEY

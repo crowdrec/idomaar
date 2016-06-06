@@ -3,6 +3,7 @@ import datetime
 import logging
 import yaml
 from http_comp_env import HttpComputingEnvironmentProxy
+from idomaar_data_source import IdomaarDataSource
 from recommendation_manager import RecommendationManager
 from util import timed_exec
 from zmq_comp_env import ZmqComputingEnvironmentProxy
@@ -11,8 +12,10 @@ from idomaar_environment import IdomaarEnvironment
 from replicating_evaluator_proxy import ReplicatingEvaluatorProxy
 import time
 from generated_flume_config import FlumeConfig
+import socket
 
 logger = logging.getLogger("orchestrator")
+
 
 class Orchestrator(object):
 
@@ -96,24 +99,32 @@ class Orchestrator(object):
 
     def feed_test_data(self):
         if self.config.input_data == 'recommend': 
-            logger.info("Data treated as recommendation requests, sending directly to topic " + self.config.recommendation_requests_topic)
+            logger.info("Test phase: data treated as recommendation requests, sending directly to topic " + self.config.recommendation_requests_topic)
             config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name='idomaar-TO-kafka-direct.conf')
             config.set_value('agent.sinks.kafka_sink.topic', self.config.recommendation_requests_topic)
             config.set_value('agent.sources.idomaar_source.fileName', self.config.data_source)
+            config.set_value('agent.sinks.kafka_sink.brokerList', self.environment.kafka_hostport)
+
             config.generate()
             logger.info("Start feeding data to Flume, Kafka sink topic is {0}".format(self.config.recommendation_requests_topic))
-            test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/test --name agent --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf"
+
+            flume_conf_file = '/vagrant/flume-config/config/generated/idomaar-TO-kafka-direct.conf'
+            flume_log_conf_dir = '/vagrant/flume-config/log4j/test'
+            test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf {flume_log_conf_dir} --name agent --conf-file {flume_conf_file}" \
+                .format(flume_conf_file=flume_conf_file, flume_log_conf_dir=flume_log_conf_dir)
             self.executor.start_on_data_stream_manager(command=test_data_feed_command, process_name="to-kafka-flume")
         elif self.config.input_data == 'test':
+            logger.info("Test phase: Input data treated as test data.")
             self.create_flume_config('idomaar-TO-kafka-test.conf')
             logger.info("Start feeding test data to queue")
             ## TODO CURRENTLY WE ARE TESTING ONLY "FILE" TYPE, WE NEED TO BE ABLE TO CONFIGURE A TEST OF TYPE STREAMING
             test_data_feed_command = "/opt/apache/flume/bin/flume-ng agent --conf /vagrant/flume-config/log4j/test --name a1 --conf-file /vagrant/flume-config/config/generated/idomaar-TO-kafka-test.conf -Didomaar.url=" + self.config.test_uri + " -Didomaar.sourceType=file"
             self.executor.run_on_data_stream_manager(test_data_feed_command)
         elif self.config.input_data == 'split':
-            input_file_location = '/vagrant/input/' + self.config.data_source
-            self.check_exists(input_file_location) 
-            self.evaluator_proxy.start_splitter(input_file_location)
+            logger.info("Test phase: input data treated as test data.")
+            idomaar_data_source = IdomaarDataSource(self.config.data_source)
+            idomaar_data_source.check()
+            self.evaluator_proxy.start_splitter(idomaar_data_source)
             
             
     def start_recommendation_manager(self, orchestrator_ip, recommendation_endpoint):
@@ -125,6 +136,8 @@ class Orchestrator(object):
         config = FlumeConfig(base_dir=self.flume_config_base_dir, template_file_name=template_file_name)
         config.set_value('a1.sinks.kafka_data.topic', self.config.data_topic)
         config.set_value('a1.sinks.kafka_rec.topic', self.config.recommendation_requests_topic)
+        config.set_value('a1.sinks.kafka_rec.brokerList', self.environment.kafka_hostport)
+        config.set_value('a1.sinks.kafka_data.brokerList', self.environment.kafka_hostport)
         config.generate(template_file_name)
         
     def run(self):
@@ -136,15 +149,15 @@ class Orchestrator(object):
         
     def gather_environment(self):
         environment = IdomaarEnvironment()
-        datastream_config = self.read_yaml_config(os.path.join(self.datastreammanager, "vagrant.yml"))
-        datastream_ip_address = datastream_config['box']['ip_address']
+        datastream_ip_address = socket.gethostbyname(socket.gethostname())
+        
         #TODO: properly handle orchestrator location
         environment.orchestrator_ip = datastream_ip_address
-        zookeeper_port = datastream_config['zookeeper']['port']
+        zookeeper_port = 2181
         environment.zookeeper_hostport = "{host}:{port}".format(host=datastream_ip_address, port=zookeeper_port)
         environment.kafka_hostport = "{host}:9092".format(host=datastream_ip_address)
         environment.comp_env_address = self.config.computing_environment_address
-        environment.evaluator_ip = '192.168.22.201'
+        environment.evaluator_ip = datastream_ip_address
         
         environment.input_topic = self.config.input_topic
         environment.recommendation_requests_topic = self.config.recommendation_requests_topic
@@ -158,21 +171,19 @@ class Orchestrator(object):
         return environment
     
     def start_evaluator(self, environment):
-        if self.config.newsreel == True:
+        if self.config.newsreel:
             evaluator_command = 'java -jar /vagrant/newsreel-evaluator/target/newsreel-evaluator-0.0.1-SNAPSHOT-jar-with-dependencies.jar'
-            command = evaluator_command + " 192.168.22.5:2181 192.168.22.5:9092 {results_topic} {ground_topic} {output_topic}".format(results_topic=environment.recommendation_results_topic, ground_topic=environment.ground_truth_topic, output_topic='output')
+            command = evaluator_command + " {orchestrator_ip}:2181 {orchestrator_ip}:9092 {results_topic} {ground_topic} {output_topic}".format(orchestrator_ip=environment.orchestrator_ip, results_topic=environment.recommendation_results_topic, ground_topic=environment.ground_truth_topic, output_topic='output')
         else:
-            command = "/usr/bin/spark-submit /vagrant/evaluator/eval.py {recommendation_target}/* {evaluation_result} /vagrant/evaluator/configuration.json".format(recommendation_target=self.recommendation_target.replace("fs:", ""), evaluation_result=self.evaluation_result_target)
+            command = "/opt/apache/spark/bin/spark-submit /vagrant/evaluator/eval.py {recommendation_target}/* {evaluation_result} /vagrant/evaluator/configuration.json".format(recommendation_target=self.recommendation_target.replace("fs:", ""), evaluation_result=self.evaluation_result_target)
 
-        #self, command, exit_on_failure=True, capture_output=False, default_relog_level='info'
+        #self, command, exit_on_failure=True, capture_output=True, default_relog_level='info'
         self.executor.run_on_data_stream_manager(command=command, exit_on_failure=True)
-
 
     def do_run(self):
         self.create_topic_names()
         environment = self.gather_environment()
-        
-        #self.evaluator_proxy = EvaluatorProxy(self.executor, environment)
+        self.environment = environment
         self.evaluator_proxy = ReplicatingEvaluatorProxy(self.executor, environment)
 
         self.executor.start_datastream()
@@ -189,16 +200,13 @@ class Orchestrator(object):
             recommendation_endpoint = self.config.computing_environment_address
 
         self.feed_test_data()
-        
-        
+
         manager = self.reco_managers_by_name.itervalues().next()
-        manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol, recommendations_topic=self.config.recommendation_requests_topic,
-                                     recommendation_results_topic = environment.recommendation_results_topic)
-        
+        manager.create_configuration(self.recommendation_target, communication_protocol=self.comp_env_proxy.communication_protocol, 
+                                        recommendations_topic=self.config.recommendation_requests_topic,
+                                        recommendation_results_topic = environment.recommendation_results_topic, 
+                                        kafka_hostport=environment.kafka_hostport)
         self.start_recommendation_manager(environment.orchestrator_ip, recommendation_endpoint)
-        
-#         for reco_manager in self.reco_managers_by_name.itervalues():
-#             reco_manager.start(orchestrator_ip, recommendation_endpoint)
 
         ## TODO CONFIGURE LOG IN ORDER TO TRACK ERRORS AND EXIT FROM ORCHESTRATOR
         ## TODO CONFIGURE FLUME IDOMAAR PLUGIN TO LOG IMPORTANT INFO AND LOG4J TO LOG ONLY ERROR FROM FLUME CLASS

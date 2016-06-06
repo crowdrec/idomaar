@@ -6,3 +6,5 @@ generated
 .settings
 .project
 .pydevproject
+
+*.iml
