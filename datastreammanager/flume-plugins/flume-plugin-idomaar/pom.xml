@@ -53,13 +53,6 @@
 			<artifactId>httpclient</artifactId>
 			<version>4.3.4</version>
 		</dependency>
-		<!-- http://mvnrepository.com/artifact/com.yammer.metrics/metrics-core -->
-		<dependency>
-			<groupId>com.yammer.metrics</groupId>
-			<artifactId>metrics-core</artifactId>
-			<version>2.2.0</version>
-		</dependency>
-
 
 	</dependencies>
 

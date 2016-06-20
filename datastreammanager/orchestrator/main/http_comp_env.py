@@ -62,7 +62,7 @@ class HttpComputingEnvironmentProxy:
         status_code = response.status_code
         logger.info("Received status code {0}, response {1}".format(status_code, response.text))
         if status_code != httplib.OK:
-            raise Exception("Computing environment indicated error, HTTP code {0}".format(status_code))
+            raise "Computing environment indicated error, HTTP code {0}".format(status_code)
         return response.text
 
     def respond(self, request, timeout_millis=None):
