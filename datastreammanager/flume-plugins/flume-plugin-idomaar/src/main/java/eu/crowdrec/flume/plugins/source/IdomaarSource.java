@@ -19,6 +19,7 @@
 
 package eu.crowdrec.flume.plugins.source;
 
+import com.yammer.metrics.Metrics;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.EventDrivenSource;
@@ -62,6 +63,7 @@ public class IdomaarSource extends AbstractSource implements EventDrivenSource,
 
 	@Override
 	public void configure(Context context) {
+		Metrics.newCounter(this.getClass(), "this is a workaround to trigger timely initialization of the Metrics class");
 		this.rowSeparator = context.getString("rowSeparator", "\\n");
 		this.fieldSeparator = context.getString("fieldSeparator", "\\t");
 		this.tsField = context.getInteger("tsField", 2);

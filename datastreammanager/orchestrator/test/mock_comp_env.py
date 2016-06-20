@@ -13,7 +13,7 @@ class MockComputingEnvironment:
 
 def get_this_ip_address():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("gmail.com",80))
+    s.connect(("gmail.com", 8080))
     address = s.getsockname()[0]
     s.close()
     return address
@@ -54,12 +54,16 @@ class ComputingEnvironmentHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         elif self.path == "/TRAIN":
             print("Received TRAIN ... training ... response HTTP 200")
             self.respond_ok(['OK', 'http://{}:{}'.format(this_ip_address, port)])
+        elif self.path == "/STOP":
+            print("Received STOP ... stopping ... response HTTP 200")
+            self.respond_ok(['OK', 'http://{}:{}'.format(this_ip_address, port)])
         elif self.path == "/TEST":
             print("Received TEST ... testing ... response HTTP 200")
             self.respond_ok(['OK', 'http://{}:{}'.format(this_ip_address, port)])
         else: self.send_response(httplib.NOT_FOUND)
 
 if __name__ == '__main__':
+    print("Detected IP address " + str(this_ip_address))
 
     httpd = BaseHTTPServer.HTTPServer(('0.0.0.0', port), ComputingEnvironmentHandler)
     try:
