@@ -39,10 +39,14 @@ def hello():
 @app.route('/TRAIN', methods=['POST'])
 def train():
     time.sleep(1)
-    return 'OK\nhttp://192.169.22.100:5000'
+    return 'OK\nhttp://192.168.22.100:5001'
 
 @app.route('/TEST', methods=['POST'])
 def test():
+    return 'OK'
+
+@app.route('/STOP', methods=['POST'])
+def stop():
     return 'OK'
 
 @app.route('/RECOMMEND/<session>/<items>', methods=['POST'])
