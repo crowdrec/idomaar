@@ -45,6 +45,10 @@ def train():
 def test():
     return 'OK'
 
+@app.route('/STOP', methods=['POST'])
+def stop():
+    return 'OK'
+
 @app.route('/RECOMMEND/<session>/<items>', methods=['POST'])
 def recommend(session, items):
     gru = load_gru_from_fs()
