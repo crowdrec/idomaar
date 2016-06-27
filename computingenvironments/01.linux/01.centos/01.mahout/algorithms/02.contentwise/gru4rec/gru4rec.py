@@ -403,7 +403,8 @@ class GRU4Rec:
             X = T.ivector()
             Y = T.ivector()
             for i in range(len(self.layers)):
-                self.H[i].set_value(np.zeros((batch, self.layers[i]), dtype=theano.config.floatX), borrow=True)
+                #self.H[i].set_value(np.zeros((batch, self.layers[i]), dtype=theano.config.floatX), borrow=True)
+                self.H[i].set_value(np.zeros((batch, self.layers[i]), dtype=np.float32), borrow=True)
             if predict_for_item_ids is not None:
                 H_new, yhat, _ = self.model(X, self.H, Y, 0)
             else:
