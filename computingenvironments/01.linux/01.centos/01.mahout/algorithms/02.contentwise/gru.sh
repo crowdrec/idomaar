@@ -5,7 +5,7 @@
 # processname: gru
 
 THIS_HOST_IP=192.168.22.100
-LOG=/tmp/gru.log
+LOG=/vagrant/algorithms/02.contentwise/gru.log
 echo "gru service" $1 >> $LOG
 
 case $1 in
@@ -21,7 +21,7 @@ case $1 in
         ORCH=`netstat -rn | grep "^0.0.0.0 " | cut -d " " -f10`
         echo executing nohup python3 /vagrant/algorithms/02.contentwise/http_flask_server.py >> $LOG
         #Sleep 1 at the end to work around vagrant ssh nohup issue (nohup processes are stl shut down on exit)
-        nohup python3 /vagrant/algorithms/02.contentwise/http_flask_server.py >> $LOG & sleep 1
+        nohup python3 http_flask_server.py >> $LOG & sleep 1
         echo "Started." >> $LOG
     ;;
     stop)

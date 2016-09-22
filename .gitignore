@@ -6,5 +6,6 @@ generated
 .settings
 .project
 .pydevproject
+**/*.pickle
 
 *.iml
