@@ -1,7 +1,7 @@
 # Python HTTP Interface Usage
 
 ## Introduction
-This template aims to make it easy to evaluate recommendation algorithms using a simple HTTP REST interface written in Python.
+This template aims to make it easy to evaluate recommendation algorithms using a simple HTTP REST interface written in Python (version 3.x).
 
 ## Installation
 Follow the steps in **Installation** section of [usage.md](usage.md#installation) for basic installation instructions.
@@ -9,7 +9,7 @@ Follow the steps in **Installation** section of [usage.md](usage.md#installation
 ## Using the HTTP template
 To let Idomaar evaluate your own recommendation algorithm using HTTP as transport protocol between the orchestrator and the computing environment, you have to let the server know how to fetch recommendations from your algorithm.
 
-To do so, open file `computingenvironments\01.linux\01.centos\01.mahout\algorithms\02.http\idomaar-http-server.py` and edit the body of `recommend()` method (this is just an example):
+To do so, open file `computingenvironments\01.linux\01.centos\01.mahout\algorithms\02.http\idomaar-http-server.py` and edit the body of `recommend()` method (what follows is just an example):
 
 ```python
 def recommend():
