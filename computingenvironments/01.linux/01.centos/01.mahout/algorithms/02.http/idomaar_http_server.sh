@@ -5,7 +5,7 @@
 # processname: idomaar_http_server
 
 THIS_HOST_IP=192.168.22.100
-LOG=/vagrant/algorithms/02.http-example/idomaar_http_server.log
+LOG=/vagrant/algorithms/02.http/idomaar_http_server.log
 echo "idomaar_http_server service" $1 >> $LOG
 
 case $1 in
@@ -17,9 +17,9 @@ case $1 in
     ;;
     start)
 	    echo "starting idomaar_http_server service"
-        cd /vagrant/algorithms/02.http-example
+        cd /vagrant/algorithms/02.http
         ORCH=`netstat -rn | grep "^0.0.0.0 " | cut -d " " -f10`
-        echo executing nohup python3 /vagrant/algorithms/02.http-example/idomaar_http_server.py >> $LOG
+        echo executing nohup python3 /vagrant/algorithms/02.http/idomaar_http_server.py >> $LOG
         #Sleep 1 at the end to work around vagrant ssh nohup issue (nohup processes are stl shut down on exit)
         nohup python3 idomaar_http_server.py >> $LOG & sleep 1
         echo "Started." >> $LOG

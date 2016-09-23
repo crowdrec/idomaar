@@ -10,7 +10,7 @@ echo Working directory is %cd%
 echo Bringing up demo computing environment %demo_computing_env%
 vagrant up
 echo Starting recommender engine ...
-vagrant ssh -c 'sudo /vagrant/algorithms/02.http-example/idomaar_http_server.sh start'
+vagrant ssh -c 'sudo /vagrant/algorithms/02.http/idomaar_http_server.sh start'
 cd %basedir%
 echo Working directory is %cd%
 echo Launching Idomaar HTTP REST server ...
