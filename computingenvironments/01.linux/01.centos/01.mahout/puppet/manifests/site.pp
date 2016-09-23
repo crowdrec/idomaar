@@ -46,9 +46,9 @@
   } ->
 
   # Create startup script for algorithm
-  exec { "cp gru.sh /etc/init.d/gru":
+  exec { "cp idomaar_http_server.sh /etc/init.d/idomaar_http_server":
     cwd        => '/vagrant/algorithms/02.contentwise/',
-    # creates => "/etc/script/gru",
+    # creates => "/etc/script/idomaar_http_server",
     path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
     timeout => 60
   } ->  

@@ -40,7 +40,7 @@ AWS_PRIVATEKEY_PATH = ENV['AWS_PRIVATEKEY_PATH']
 
 
 nodes = [
-    {"node_id" => 1, "hostname" => 'mahout', "ip" => '192.168.22.100', "box" => BOX_NAME, "boxurl" => BOX_URI, "ram" => 2048, "role" => 'fe'}
+    {"node_id" => 1, "hostname" => 'mahout', "ip" => '192.168.22.100', "box" => BOX_NAME, "boxurl" => BOX_URI, "ram" => 512, "role" => 'fe'}
 ]
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
@@ -56,7 +56,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       node_config.vm.network :private_network, ip: node["ip"]
 
       node_config.vm.provider 'virtualbox' do |v, override|
-        memory = node["ram"] ? node["ram"] : 2048;
+        memory = node["ram"] ? node["ram"] : 512;
         v.customize ['modifyvm', :id,
                      '--name', node["hostname"],
                      '--memory', memory.to_s
