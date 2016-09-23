@@ -47,7 +47,7 @@
 
   # Create startup script for algorithm
   exec { "cp idomaar_http_server.sh /etc/init.d/idomaar_http_server":
-    cwd        => '/vagrant/algorithms/02.contentwise/',
+    cwd        => '/vagrant/algorithms/02.http/',
     # creates => "/etc/script/idomaar_http_server",
     path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
     timeout => 60
