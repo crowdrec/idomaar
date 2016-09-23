@@ -1,10 +1,10 @@
-# Idomaar HTTP Interface Usage
+# Python HTTP Interface Usage
 
 ## Introduction
-This template aims to make it easy to evaluate recommendation algorithms using a simple HTTP REST interface.
+This template aims to make it easy to evaluate recommendation algorithms using a simple HTTP REST interface written in Python.
 
 ## Installation
-Follow the steps in **Installation** section of [usage.md](usage.md) for basic installation instructions.
+Follow the steps in **Installation** section of [usage.md](usage.md#installation) for basic installation instructions.
 
 ## Using the HTTP template
 To let Idomaar evaluate your own recommendation algorithm using HTTP as transport protocol between the orchestrator and the computing environment, you have to let the server know how to fetch recommendations from your algorithm.
@@ -39,4 +39,13 @@ def recommend():
 
 Note that the response sent by the server *must* follow the structure described in the above sample source code.
 
-After you have properly edited this file, you can launch `idomaar-demo.sh` (or `idomaar-demo.bat` if you are using Windows) to start the evaluation process.
+This file implements all the methods required to interact with the orchestrator (see [Idomaar architecture](https://github.com/crowdrec/idomaar/wiki/Idomaar-architecture)); all requests are sent using POST method and the Python server listens to Idomaar's specific paths over POST method. In particular, the training phase is here skipped because you can train your model in a previous moment. If you want Idomaar to control your model training, you have to properly edit the `train()` method (see [Idomaar evaluation process](https://github.com/crowdrec/idomaar/wiki/Idomaar-evaluation-process) for details).
+
+The full list of implemented methods (only POST requests are managed, since orchestrator sends POST requests) is:
+* Request to path `/HELLO` is sent by the orchestrator to test if the computing environment is ready; when it is ready, the server answers with string `"READY"`
+* Request to path `/TRAIN` causes starting your model training phase and the response is the string `"OK\n<ip_address:port>"` where `ip_address:port` is the recommendation endpoint
+* Request to path `/TEST` tells the computing environment that the orchestrator is ready to serve recommendation requests; the server answers with the string `"OK"`
+* Request to path `/` causes the start of the recommendation fetching process from the computing environment; the response is a string serialization of a JSON formatted object containing the recommendations
+* Request to path `/STOP` causes the evaluation framework to terminate. Once the server is ready, it answers with the string `"OK"`
+
+After you have finished editing [`idomaar-http-server.py`](computingenvironments\01.linux\01.centos\01.mahout\algorithms\02.http\idomaar-http-server.py) according to your needs, you can launch [`idomaar-demo.sh`](idomaar-demo.sh) (or [`idomaar-demo.bat`](idomaar-demo.bat) if you are using Windows) to start the evaluation process.

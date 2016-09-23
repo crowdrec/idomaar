@@ -17,7 +17,7 @@ def hello():
 
 @app.route('/TRAIN', methods=['POST'])
 def train():
-    app.logger.error(request.form)
+    # The template skips this phase; replace this code if you want Idomaar to control training of your model
     time.sleep(1)
     return 'OK\nhttp://192.168.22.100:5001'
 
