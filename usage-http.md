@@ -48,4 +48,4 @@ The full list of implemented methods (only POST requests are managed, since orch
 * Request to path `/` causes the start of the recommendation fetching process from the computing environment; the response is a string serialization of a JSON formatted object containing the recommendations
 * Request to path `/STOP` causes the evaluation framework to terminate. Once the server is ready, it answers with the string `"OK"`
 
-After you have finished editing [`idomaar-http-server.py`](computingenvironments/01.linux/01.centos/01.mahout/algorithms/02.http/idomaar-http-server.py) according to your needs, you can launch [`idomaar-demo.sh`](idomaar-demo.sh) (or [`idomaar-demo.bat`](idomaar-demo.bat) if you are using Windows) to start the evaluation process.
+After you have finished editing `idomaar-http-server.py` according to your needs, you can launch `idomaar-demo.sh` (or `idomaar-demo.bat` if you are using Windows) to start the evaluation process.
