@@ -9,7 +9,7 @@ Follow the steps in **Installation** section of [usage.md](usage.md#installation
 ## Using the HTTP template
 To let Idomaar evaluate your own recommendation algorithm using HTTP as transport protocol between the orchestrator and the computing environment, you have to let the server know how to fetch recommendations from your algorithm.
 
-To do so, open file `computingenvironments\01.linux\01.centos\01.mahout\algorithms\02.http\idomaar-http-server.py` and edit the body of `recommend()` method (what follows is just an example):
+To do so, open file `computingenvironments/01.linux/01.centos/01.mahout/algorithms/02.http/idomaar-http-server.py` and edit the body of `recommend()` method (what follows is just an example):
 
 ```python
 def recommend():
@@ -37,7 +37,7 @@ def recommend():
     return app.make_response(json.dumps(resp))
 ```
 
-Note that the response sent by the server *must* follow the structure described in the above sample source code.
+Note that the response `resp` sent by the server *must* follow the structure described in the above sample source code.
 
 This file implements all the methods required to interact with the orchestrator (see [Idomaar architecture](https://github.com/crowdrec/idomaar/wiki/Idomaar-architecture)); all requests are sent using POST method and the Python server listens to Idomaar's specific paths over POST method. In particular, the training phase is here skipped because you can train your model in a previous moment. If you want Idomaar to control your model training, you have to properly edit the `train()` method (see [Idomaar evaluation process](https://github.com/crowdrec/idomaar/wiki/Idomaar-evaluation-process) for details).
 
@@ -49,3 +49,20 @@ The full list of implemented methods (only POST requests are managed, since orch
 * Request to path `/STOP` causes the evaluation framework to terminate. Once the server is ready, it answers with the string `"OK"`
 
 After you have finished editing `idomaar-http-server.py` according to your needs, you can launch `idomaar-demo.sh` (or `idomaar-demo.bat` if you are using Windows) to start the evaluation process.
+
+## Troubleshooting
+If the Python server doesn't automatically start when `idomaar-demo.sh` is executed you need to start it from the computing environment by open a terminal in `computingenvironments\01.linux\01.centos\01.mahout` folder and then launching the following commands:
+
+```sh
+vagrant ssh
+
+sudo service idomaar-http-server start
+```
+
+If it does not work, try launching
+
+```sh
+python3 /vagrant/algorithms/02.http/idommar-http-server.py
+```
+
+from the remote shell opened before.
