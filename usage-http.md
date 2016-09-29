@@ -28,16 +28,15 @@ def recommend():
     resp['GT'] = recRequestProperties
     resp['rec'] = []
 
-    # Each recommendation is a dict item of 'rec' list inside 'resp' dict and it is formed
-    # by {id, nextItemId, nextItemScore}. Response *must* follow this structure to be readable
-    # by the evaluator
+    # Each recommendation is a dict item of 'rec' list inside 'resp' dict and it is formed by
+    # {id, rating, rank}. Response *must* follow this structure to be readable by the evaluator
     for i in range(len(algo_resp)):
         resp['rec'].append({"id": int(algo_resp[i][0]), "rating": float(algo_resp[i][1]), "rank": i+1})
     
     return app.make_response(json.dumps(resp))
 ```
 
-Note that the response `resp` sent by the server *must* follow the structure described in the above sample source code.
+Note that the response `resp` sent by the server *must* follow the structure described in the above sample source code, that is, it must be a dictionary with keys `GT` and `rec`. `GT` contains the list of items for which you are asking recommendations, and `rec` contains a list of recommendations saved as dictionaries with keys `id` (the next item identifier, as returned by your algorithm), `rating` (the score associated with the current recommendation) and `rank` (it can be simply an ascending counter if recommendations are ordered by descending score).
 
 This file implements all the methods required to interact with the orchestrator (see [Idomaar architecture](https://github.com/crowdrec/idomaar/wiki/Idomaar-architecture)); all requests are sent using POST method and the Python server listens to Idomaar's specific paths over POST method. In particular, the training phase is here skipped because you can train your model in a previous moment. If you want Idomaar to control your model training, you have to properly edit the `train()` method (see [Idomaar evaluation process](https://github.com/crowdrec/idomaar/wiki/Idomaar-evaluation-process) for details).
 
@@ -51,7 +50,7 @@ The full list of implemented methods (only POST requests are managed, since orch
 After you have finished editing `idomaar-http-server.py` according to your needs, you can launch `idomaar-demo.sh` (or `idomaar-demo.bat` if you are using Windows) to start the evaluation process.
 
 ## Troubleshooting
-If the Python server doesn't automatically start when `idomaar-demo.sh` is executed you need to start it from the computing environment by open a terminal in `computingenvironments\01.linux\01.centos\01.mahout` folder and then launching the following commands:
+If the Python server doesn't automatically start when `idomaar-demo.sh` is executed, you need to start it from the computing environment by open a terminal in `computingenvironments\01.linux\01.centos\01.mahout` folder and then launching the following commands:
 
 ```sh
 vagrant ssh
