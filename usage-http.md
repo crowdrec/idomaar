@@ -50,7 +50,7 @@ The full list of implemented methods (only POST requests are managed, since orch
 After you have finished editing `idomaar-http-server.py` according to your needs, you can launch `idomaar-demo.sh` (or `idomaar-demo.bat` if you are using Windows) to start the evaluation process.
 
 ## Troubleshooting
-If the Python server doesn't automatically start when `idomaar-demo.sh` is executed, you need to start it from the computing environment by open a terminal in `computingenvironments\01.linux\01.centos\01.mahout` folder and then launching the following commands:
+If the Python server doesn't automatically start when `idomaar-demo.sh` is executed, you need to start it from the computing environment by opening a terminal in `computingenvironments\01.linux\01.centos\01.mahout` folder and then launching the following commands:
 
 ```sh
 vagrant ssh
