@@ -10,8 +10,8 @@ echo Working directory is %cd%
 echo Bringing up demo computing environment %demo_computing_env%
 vagrant up
 echo Starting recommender engine ...
-vagrant ssh -c 'sudo /vagrant/algorithms/01.example/itembasedrec.sh start'
+vagrant ssh -c 'sudo /vagrant/algorithms/02.http/idomaar_http_server.sh start'
 cd %basedir%
 echo Working directory is %cd%
-echo Launching idomaar ...
-%basedir%/idomaar.bat --comp-env-address tcp://192.168.22.100:2760 --training-uri https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/training/data.dat --test-uri https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/test/data.dat %*
+echo Launching Idomaar HTTP REST server ...
+%basedir%/idomaar.bat --comp-env-address http://192.168.22.100:5000 --training-uri https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/training/data.dat --test-uri https://raw.githubusercontent.com/crowdrec/datasets/master/01.MovieTweetings/datasets/snapshots_10K/evaluation/test/data.dat %*
