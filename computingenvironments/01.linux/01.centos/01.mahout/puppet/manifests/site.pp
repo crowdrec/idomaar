@@ -46,15 +46,15 @@
   } ->
 
   # Create startup script for algorithm
-  exec { "cp itembasedrec.sh /etc/init.d/itembasedrec":
-    cwd        => '/vagrant/algorithms/01.example/',
-    # creates => "/etc/script/itembasedrec",
+  exec { "cp gru.sh /etc/init.d/gru":
+    cwd        => '/vagrant/algorithms/02.contentwise/',
+    # creates => "/etc/script/gru",
     path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
     timeout => 60
   } ->  
 
   # Enable algo startup at boot
-  service { "itembasedrec":
+  service { "gru":
     enable => true,
     ensure => running
   }
