@@ -23,8 +23,12 @@
   package { 'oracle-java7-installer':
     ensure => installed
   }
-  
-  # Install Maven
+
+   package { 'python3-flask':
+     ensure => installed
+   }
+
+   # Install Maven
   class { "maven::maven":
     version => "3.2.1", # version to install
     # you can get Maven tarball from a Maven repository instead than from Apache servers, optionally with a user/password
