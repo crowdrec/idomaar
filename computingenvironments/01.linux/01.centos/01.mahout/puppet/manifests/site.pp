@@ -51,12 +51,12 @@
     # creates => "/etc/script/idomaar_http_server",
     path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
     timeout => 60
-  } ->  
+  } ->
 
-  # Enable algo startup at boot
-  service { "gru":
-    enable => true,
-    ensure => running
+    # Create startup script for algorithm
+  exec { "cp gru.sh /etc/init.d/gru":
+    cwd        => '/vagrant/algorithms/03.gru/',
+    path => ["/usr/bin", "/usr/sbin", "/bin", "/sbin"],
+    timeout => 60
   }
-
 
