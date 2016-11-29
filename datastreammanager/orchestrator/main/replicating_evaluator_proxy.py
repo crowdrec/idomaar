@@ -19,12 +19,8 @@ class ReplicatingEvaluatorProxy():
         config.set_value('agent.sinks.kafka_sink.brokerList', kafka_hostport)
         if data_source.url:
             config.set_value('agent.sources.idomaar_source.url', data_source.url)
-        else:
-            config.set_value('agent.sources.idomaar_source.url', 'None')
         if data_source.file_name:
             config.set_value('agent.sources.idomaar_source.fileName', data_source.file_name)
-        else:
-            config.set_value('agent.sources.idomaar_source.fileName', 'None')
         config.set_value('agent.sources.idomaar_source.format', data_source.format)
         config.set_value('agent.channels.channel.checkpointDir', '/tmp/' + config_file_name + '/flume_data_checkpoint')
         config.set_value('agent.channels.channel.dataDirs', '/tmp/' + config_file_name + '/flume_data')
